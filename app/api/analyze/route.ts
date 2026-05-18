@@ -46,13 +46,10 @@ export async function POST(req: Request) {
     for (const file of files) {
       const buffer = Buffer.from(await file.arrayBuffer())
 
-      const image = await Jimp.Jimp.read(buffer)
+      const image = await Jimp.read(buffer)
 
       // NORMALIZE SIZE
-      image.resize({
-  width: 1000,
-  height: 1400,
-})
+image.resize(1000, 1400)
 
       const width = image.bitmap.width
       const height = image.bitmap.height
