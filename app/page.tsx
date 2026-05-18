@@ -3,17 +3,20 @@
 import { useState } from 'react'
 
 export default function Home() {
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<FileList | null>(null)
   const [result, setResult] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
   const upload = async () => {
-    if (!file) return
+    if (!files) return
 
     setLoading(true)
 
     const formData = new FormData()
-    formData.append('image', file)
+
+    Array.from(files).forEach((file) => {
+      formData.append('images', file)
+    })
 
     const res = await fetch('/api/analyze', {
       method: 'POST',
@@ -27,33 +30,33 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen p-10">
-      <h1 className="text-3xl font-bold mb-6">
+    <main className="min-h-screen bg-black text-white p-8">
+      <h1 className="text-5xl font-bold mb-10">
         Brunch Scanner
       </h1>
 
       <input
         type="file"
         accept="image/*"
-        capture="environment"
+        multiple
         onChange={(e) => {
-          if (e.target.files?.[0]) {
-            setFile(e.target.files[0])
-          }
+          setFiles(e.target.files)
         }}
       />
 
       <button
         onClick={upload}
-        className="bg-black text-white px-4 py-2 rounded mt-4"
+        className="bg-white text-black px-6 py-3 rounded-xl mt-6 block"
       >
-        Upload
+        Upload billeder
       </button>
 
-      {loading && <p className="mt-4">Analyserer...</p>}
+      {loading && (
+        <p className="mt-6">Analyserer billeder...</p>
+      )}
 
       {result && (
-        <pre className="mt-6 bg-gray-100 p-4 rounded">
+        <pre className="mt-8 bg-zinc-900 p-4 rounded-xl overflow-auto">
           {JSON.stringify(result, null, 2)}
         </pre>
       )}
