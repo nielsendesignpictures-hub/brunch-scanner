@@ -24,18 +24,17 @@ export default function Home() {
         body: formData,
       })
 
-   const data = await res.json()
+      const data = await res.json()
 
-console.log(data)
+      console.log(data)
 
-setResult(data)
-
-catch (err: any) {
-  setResult({
-    success: false,
-    error: String(err),
-  })
-}
+      setResult(data)
+    } catch (err) {
+      setResult({
+        success: false,
+        error: String(err),
+      })
+    }
 
     setLoading(false)
   }
@@ -49,7 +48,7 @@ catch (err: any) {
 
         <div className="bg-zinc-900 rounded-3xl p-6">
 
-          {/* KAMERA */}
+          {/* Kamera */}
           <label className="block mb-4">
             <span className="bg-white text-black rounded-2xl px-6 py-5 text-xl font-semibold block text-center">
               📸 Tag billede
@@ -66,7 +65,7 @@ catch (err: any) {
             />
           </label>
 
-          {/* MULTIPLE */}
+          {/* Flere billeder */}
           <label className="block">
             <span className="bg-zinc-800 border border-zinc-700 rounded-2xl px-6 py-5 text-xl font-semibold block text-center">
               🖼️ Vælg flere billeder
@@ -100,44 +99,13 @@ catch (err: any) {
           </button>
         </div>
 
-        {result?.success && result?.totals && (
-          <div className="mt-10">
-            <div className="flex items-center gap-2 mb-6">
-              <span className="text-3xl">✅</span>
-
-              <h2 className="text-3xl font-bold">
-                Totals
-              </h2>
-            </div>
-
-            <div className="space-y-3">
-              {Object.entries(result.totals)
-                .filter(([_, count]) => Number(count) > 0)
-                .map(([name, count]) => (
-                  <div
-                    key={name}
-                    className="bg-zinc-900 rounded-2xl p-5 flex justify-between items-center"
-                  >
-                    <span className="text-lg">
-                      {name}
-                    </span>
-
-                    <span className="text-2xl font-bold">
-                      {count as number}
-                    </span>
-                  </div>
-                ))}
-            </div>
+        {result && (
+          <div className="mt-8 bg-zinc-900 rounded-2xl p-4 overflow-auto">
+            <pre>
+              {JSON.stringify(result, null, 2)}
+            </pre>
           </div>
         )}
-
-{result && (
-  <div className="mt-8 bg-zinc-900 rounded-2xl p-4 overflow-auto">
-    <pre>
-      {JSON.stringify(result, null, 2)}
-    </pre>
-  </div>
-)}
       </div>
     </main>
   )
