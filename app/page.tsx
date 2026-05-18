@@ -131,17 +131,13 @@ catch (err: any) {
           </div>
         )}
 
-        {result?.success === false && (
-          <div className="mt-8 bg-red-500/20 border border-red-500 rounded-2xl p-4">
-            <p className="font-bold">
-              Fejl ved scanning
-            </p>
-
-            <p className="text-sm mt-2 break-all">
-              {result.error}
-            </p>
-          </div>
-        )}
+{result && (
+  <div className="mt-8 bg-zinc-900 rounded-2xl p-4 overflow-auto">
+    <pre>
+      {JSON.stringify(result, null, 2)}
+    </pre>
+  </div>
+)}
       </div>
     </main>
   )
