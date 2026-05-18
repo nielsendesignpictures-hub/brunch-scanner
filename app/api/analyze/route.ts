@@ -30,6 +30,7 @@ const menuItems = [
 { name: 'Øllebrød med let vaniljeskum', x: 0.54, y: 0.72 },
 { name: '2 amerikanske pandekager', x: 0.54, y: 0.81 },
 
+ ]
 export async function POST(req: Request) {
   try {
     const formData = await req.formData()
