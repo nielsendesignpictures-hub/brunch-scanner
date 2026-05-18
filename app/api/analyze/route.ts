@@ -58,7 +58,7 @@ image.resize(1000, 1400)
         const x = Math.floor(item.x * width)
         const y = Math.floor(item.y * height)
 
-        const size = 28
+        const size = 14
 
         let darkPixels = 0
 
@@ -71,14 +71,14 @@ image.resize(1000, 1400)
             const brightness =
               (rgba.r + rgba.g + rgba.b) / 3
 
-            if (brightness < 170) {
+            if (brightness < 110) {
               darkPixels++
             }
           }
         }
 
         // CHECKBOX THRESHOLD
-        if (darkPixels > 18) {
+        if (darkPixels > 6) {
           totals[item.name]++
         }
       }
