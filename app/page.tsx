@@ -75,29 +75,12 @@ export default function Home() {
         </div>
       )}
 
-      {result?.totals && (
-        <div className="mt-10">
-          <h2 className="text-3xl font-bold mb-6">
-            Totals
-          </h2>
-
-          <div className="space-y-3">
-            {Object.entries(result.totals).map(
-              ([name, count]) => (
-                <div
-                  key={name}
-                  className="bg-zinc-900 p-4 rounded-2xl flex justify-between"
-                >
-                  <span>{name}</span>
-
-                  <span className="font-bold">
-                    {count as number}
-                  </span>
-                </div>
-              )
-            )}
-          </div>
-        </div>
+      {result && (
+<div className="mt-10">
+  <pre className="bg-zinc-900 p-4 rounded-2xl overflow-auto">
+    {JSON.stringify(result, null, 2)}
+  </pre>
+</div>
       )}
     </main>
   )
