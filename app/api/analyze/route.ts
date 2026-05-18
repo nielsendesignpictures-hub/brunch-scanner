@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-const Jimp = require('jimp')
+import Jimp from 'jimp'
 
 const menuItems = [
   // MEJERI
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     for (const file of files) {
       const buffer = Buffer.from(await file.arrayBuffer())
 
-      const image = await Jimp.read(buffer)
+    const image = await Jimp.read(buffer)
 
       // NORMALIZE SIZE
 image.resize(1000, 1400)
