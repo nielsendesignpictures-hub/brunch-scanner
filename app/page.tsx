@@ -24,15 +24,18 @@ export default function Home() {
         body: formData,
       })
 
-      const data = await res.json()
+   const data = await res.json()
 
-      setResult(data)
-    } catch (err) {
-      setResult({
-        success: false,
-        error: 'Noget gik galt',
-      })
-    }
+console.log(data)
+
+setResult(data)
+
+catch (err: any) {
+  setResult({
+    success: false,
+    error: String(err),
+  })
+}
 
     setLoading(false)
   }
