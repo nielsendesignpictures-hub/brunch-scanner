@@ -18,57 +18,86 @@ export default function Home() {
       formData.append('images', file)
     })
 
-try {
-  const res = await fetch('/api/analyze', {
-    method: 'POST',
-    body: formData,
-  })
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        body: formData,
+      })
 
-  const data = await res.json()
+      const data = await res.json()
 
-  console.log(data)
+      setResult(data)
+    } catch (err) {
+      setResult({
+        error: 'Noget gik galt',
+      })
+    }
 
-  setResult(data)
-} catch (err) {
-  console.error(err)
-
-  setResult({
-    error: 'Noget gik galt',
-  })
-}
-
-setLoading(false)
+    setLoading(false)
+  }
 
   return (
-    <main className="min-h-screen bg-black text-white p-8">
+    <main className="min-h-screen bg-black text-white p-6">
       <h1 className="text-5xl font-bold mb-10">
         Brunch Scanner
       </h1>
 
-      <input
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={(e) => {
-          setFiles(e.target.files)
-        }}
-      />
+      <div className="bg-zinc-900 p-6 rounded-3xl">
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) => {
+            setFiles(e.target.files)
+          }}
+          className="mb-6"
+        />
 
-      <button
-        onClick={upload}
-        className="bg-white text-black px-6 py-3 rounded-xl mt-6 block"
-      >
-        Upload billeder
-      </button>
+        {files && (
+          <p className="mb-4 text-zinc-400">
+            {files.length} billeder valgt
+          </p>
+        )}
+
+        <button
+          onClick={upload}
+          className="bg-white text-black px-6 py-4 rounded-2xl w-full text-xl font-semibold"
+        >
+          Upload billeder
+        </button>
+      </div>
 
       {loading && (
-        <p className="mt-6">Analyserer billeder...</p>
+        <div className="mt-8">
+          <p className="text-xl">
+            Scanner billeder...
+          </p>
+        </div>
       )}
 
-      {result && (
-        <pre className="mt-8 bg-zinc-900 p-4 rounded-xl overflow-auto">
-          {JSON.stringify(result, null, 2)}
-        </pre>
+      {result?.totals && (
+        <div className="mt-10">
+          <h2 className="text-3xl font-bold mb-6">
+            Totals
+          </h2>
+
+          <div className="space-y-3">
+            {Object.entries(result.totals).map(
+              ([name, count]) => (
+                <div
+                  key={name}
+                  className="bg-zinc-900 p-4 rounded-2xl flex justify-between"
+                >
+                  <span>{name}</span>
+
+                  <span className="font-bold">
+                    {count as number}
+                  </span>
+                </div>
+              )
+            )}
+          </div>
+        </div>
       )}
     </main>
   )
