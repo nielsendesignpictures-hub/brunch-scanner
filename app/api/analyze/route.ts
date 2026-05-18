@@ -3,81 +3,96 @@ const Jimp = require('jimp')
 
 const menuItems = [
   // MEJERI
-  { name: 'Røræg', x: 70, y: 310 },
-  { name: 'Spejlæg', x: 70, y: 380 },
-  { name: 'Modnet Havarti ost', x: 70, y: 450 },
-  { name: 'Hjemmelavet blåbæryoghurt', x: 70, y: 520 },
-  { name: 'Hjemmelavet chiagrød', x: 70, y: 600 },
+  { name: 'Røræg', x: 0.07, y: 0.24 },
+  { name: 'Spejlæg', x: 0.07, y: 0.29 },
+  { name: 'Modnet Havarti ost', x: 0.07, y: 0.35 },
+  { name: 'Hjemmelavet blåbæryoghurt', x: 0.07, y: 0.41 },
+  { name: 'Hjemmelavet chiagrød', x: 0.07, y: 0.49 },
 
   // PLANTERIGET
-  { name: 'Avocado og hytteost', x: 70, y: 810 },
-  { name: 'Eksotisk frugtskål', x: 70, y: 880 },
-  { name: 'Smashed peas med forårsmynte', x: 70, y: 950 },
+  { name: 'Avocado og hytteost', x: 0.07, y: 0.66 },
+  { name: 'Eksotisk frugtskål', x: 0.07, y: 0.72 },
+  { name: 'Smashed peas med forårsmynte', x: 0.07, y: 0.77 },
 
   // BAGERIET
-  { name: 'Pain au chocolat fra Meyers', x: 70, y: 1180 },
-  { name: 'Øko. smørcrossaint fra Meyers', x: 70, y: 1260 },
-  { name: 'Mariagertoba-toast', x: 70, y: 1330 },
+  { name: 'Pain au chocolat fra Meyers', x: 0.07, y: 0.92 },
+  { name: 'Øko. smørcrossaint fra Meyers', x: 0.07, y: 0.98 },
 
   // KØD OG FISK
-  { name: 'Rösti', x: 580, y: 310 },
-  { name: 'Hjemmelavet hønsesalat', x: 580, y: 390 },
-  { name: 'Crispy chicken', x: 580, y: 470 },
-  { name: '2 brunchpølser', x: 580, y: 550 },
-  { name: 'Koldrøget laks', x: 580, y: 640 },
+  { name: 'Rösti', x: 0.55, y: 0.24 },
+  { name: 'Hjemmelavet hønsesalat', x: 0.55, y: 0.30 },
+  { name: 'Crispy chicken', x: 0.55, y: 0.38 },
+  { name: '2 brunchpølser', x: 0.55, y: 0.46 },
+  { name: 'Koldrøget laks', x: 0.55, y: 0.54 },
 
   // FINALEN
-  { name: 'Lun rabarber crumble', x: 580, y: 850 },
-  { name: 'Øllebrød med let vaniljeskum', x: 580, y: 930 },
-  { name: '2 amerikanske pandekager', x: 580, y: 1040 },
+  { name: 'Lun rabarber crumble', x: 0.55, y: 0.66 },
+  { name: 'Øllebrød med let vaniljeskum', x: 0.55, y: 0.74 },
+  { name: '2 amerikanske pandekager', x: 0.55, y: 0.83 },
 ]
 
 export async function POST(req: Request) {
-  const formData = await req.formData()
+  try {
+    const formData = await req.formData()
 
-  const files = formData.getAll('images') as File[]
+    const files = formData.getAll('images') as File[]
 
-  const totals: Record<string, number> = {}
+    const totals: Record<string, number> = {}
 
-  menuItems.forEach((item) => {
-    totals[item.name] = 0
-  })
+    menuItems.forEach((item) => {
+      totals[item.name] = 0
+    })
 
-  for (const file of files) {
-    const buffer = Buffer.from(await file.arrayBuffer())
+    for (const file of files) {
+      const buffer = Buffer.from(await file.arrayBuffer())
 
-    const image = await Jimp.Jimp.read(buffer)
+      const image = await Jimp.Jimp.read(buffer)
 
-    for (const item of menuItems) {
-      const size = 32
+      // NORMALIZE SIZE
+      image.resize(1000, 1400)
 
-      let darkPixels = 0
+      const width = image.bitmap.width
+      const height = image.bitmap.height
 
-      for (let x = item.x; x < item.x + size; x++) {
-        for (let y = item.y; y < item.y + size; y++) {
-          const color = image.getPixelColor(x, y)
+      for (const item of menuItems) {
+        const x = Math.floor(item.x * width)
+        const y = Math.floor(item.y * height)
 
-          const rgba = Jimp.intToRGBA(color)
+        const size = 34
 
-          const brightness =
-            (rgba.r + rgba.g + rgba.b) / 3
+        let darkPixels = 0
 
-          if (brightness < 150) {
-            darkPixels++
+        for (let px = x; px < x + size; px++) {
+          for (let py = y; py < y + size; py++) {
+            const color = image.getPixelColor(px, py)
+
+            const rgba = Jimp.intToRGBA(color)
+
+            const brightness =
+              (rgba.r + rgba.g + rgba.b) / 3
+
+            if (brightness < 160) {
+              darkPixels++
+            }
           }
         }
-      }
 
-      // threshold
-      if (darkPixels > 120) {
-        totals[item.name]++
+        // CHECKBOX THRESHOLD
+        if (darkPixels > 90) {
+          totals[item.name]++
+        }
       }
     }
-  }
 
-  return NextResponse.json({
-    success: true,
-    scannedImages: files.length,
-    totals,
-  })
+    return NextResponse.json({
+      success: true,
+      scannedImages: files.length,
+      totals,
+    })
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: String(error),
+    })
+  }
 }
