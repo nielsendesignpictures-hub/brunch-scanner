@@ -62,8 +62,16 @@ image.resize(1000, 1400)
 
         let darkPixels = 0
 
-        for (let px = x; px < x + size; px++) {
-          for (let py = y; py < y + size; py++) {
+for (
+  let px = x;
+  px < Math.min(x + size, width);
+  px++
+) {
+  for (
+    let py = y;
+    py < Math.min(y + size, height);
+    py++
+  ) {
             const color = image.getPixelColor(px, py)
 
             const rgba = Jimp.intToRGBA(color)
