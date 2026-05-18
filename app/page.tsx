@@ -18,16 +18,26 @@ export default function Home() {
       formData.append('images', file)
     })
 
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      body: formData,
-    })
+try {
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    body: formData,
+  })
 
-    const data = await res.json()
+  const data = await res.json()
 
-    setResult(data)
-    setLoading(false)
-  }
+  console.log(data)
+
+  setResult(data)
+} catch (err) {
+  console.error(err)
+
+  setResult({
+    error: 'Noget gik galt',
+  })
+}
+
+setLoading(false)
 
   return (
     <main className="min-h-screen bg-black text-white p-8">
