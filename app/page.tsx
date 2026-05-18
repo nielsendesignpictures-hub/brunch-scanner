@@ -54,15 +54,14 @@ export default function Home() {
               📸 Tag billede
             </span>
 
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => {
-                setFiles(e.target.files)
-              }}
-            />
+<input
+  type="file"
+  accept="image/*"
+  className="hidden"
+  onChange={(e) => {
+    setFiles(e.target.files)
+  }}
+/>
           </label>
 
           {/* Flere billeder */}
