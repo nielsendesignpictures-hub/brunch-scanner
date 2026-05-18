@@ -7,43 +7,18 @@ export default function Home() {
   const [result, setResult] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
-const upload = async () => {
-  if (!files || files.length === 0) return
-
-  setLoading(true)
-
-  try {
-    const formData = new FormData()
-
-    for (let i = 0; i < files.length; i++) {
-      formData.append('images', files[i])
-    }
-
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      body: formData,
-    })
-
-    const data = await res.json()
-
-    setResult(data)
-  } catch (err) {
-    setResult({
-      success: false,
-      error: String(err),
-    })
-  }
-
-  setLoading(false)
-}
+  const upload = async () => {
+    if (!files || files.length === 0) return
 
     setLoading(true)
 
-    const formData = new FormData()
-
-
-
     try {
+      const formData = new FormData()
+
+      for (let i = 0; i < files.length; i++) {
+        formData.append('images', files[i])
+      }
+
       const res = await fetch('/api/analyze', {
         method: 'POST',
         body: formData,
@@ -79,13 +54,13 @@ const upload = async () => {
               📸 Tag billede
             </span>
 
-<input
-  type="file"
-  className="hidden"
-  onChange={(e) => {
-    setFiles(e.target.files)
-  }}
-/>
+            <input
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                setFiles(e.target.files)
+              }}
+            />
           </label>
 
           {/* Flere billeder */}
