@@ -29,6 +29,7 @@ export default function Home() {
       setResult(data)
     } catch (err) {
       setResult({
+        success: false,
         error: 'Noget gik galt',
       })
     }
@@ -38,50 +39,89 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-black text-white p-6">
-      <h1 className="text-5xl font-bold mb-10">
-        Brunch Scanner
-      </h1>
+      <div className="max-w-xl mx-auto">
+        <h1 className="text-5xl font-bold mb-10">
+          Brunch Scanner
+        </h1>
 
-      <div className="bg-zinc-900 p-6 rounded-3xl">
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(e) => {
-            setFiles(e.target.files)
-          }}
-          className="mb-6"
-        />
+        <div className="bg-zinc-900 rounded-3xl p-6">
+          <label className="block">
+            <span className="bg-white text-black rounded-2xl px-6 py-5 text-xl font-semibold block text-center">
+              📸 Vælg brunchsedler
+            </span>
 
-        {files && (
-          <p className="mb-4 text-zinc-400">
-            {files.length} billeder valgt
-          </p>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                setFiles(e.target.files)
+              }}
+            />
+          </label>
+
+          <div className="mt-5 text-zinc-400 text-lg">
+            {files
+              ? `${files.length} billeder valgt`
+              : 'Ingen billeder valgt'}
+          </div>
+
+          <button
+            onClick={upload}
+            disabled={!files || loading}
+            className="w-full mt-6 bg-green-500 text-black rounded-2xl py-5 text-xl font-bold disabled:opacity-40"
+          >
+            {loading
+              ? 'Scanner sedler...'
+              : 'Start scanning'}
+          </button>
+        </div>
+
+        {result?.success && result?.totals && (
+          <div className="mt-10">
+            <div className="flex items-center gap-2 mb-6">
+              <span className="text-3xl">✅</span>
+
+              <h2 className="text-3xl font-bold">
+                Totals
+              </h2>
+            </div>
+
+            <div className="space-y-3">
+              {Object.entries(result.totals)
+                .filter(([_, count]) => Number(count) > 0)
+                .map(([name, count]) => (
+                  <div
+                    key={name}
+                    className="bg-zinc-900 rounded-2xl p-5 flex justify-between items-center"
+                  >
+                    <span className="text-lg">
+                      {name}
+                    </span>
+
+                    <span className="text-2xl font-bold">
+                      {count as number}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
         )}
 
-        <button
-          onClick={upload}
-          className="bg-white text-black px-6 py-4 rounded-2xl w-full text-xl font-semibold"
-        >
-          Upload billeder
-        </button>
+        {result?.success === false && (
+          <div className="mt-8 bg-red-500/20 border border-red-500 rounded-2xl p-4">
+            <p className="font-bold">
+              Fejl ved scanning
+            </p>
+
+            <p className="text-sm mt-2 break-all">
+              {result.error}
+            </p>
+          </div>
+        )}
       </div>
-
-      {loading && (
-        <div className="mt-8">
-          <p className="text-xl">
-            Scanner billeder...
-          </p>
-        </div>
-      )}
-
-      {result && (
-<div className="mt-10">
-  <pre className="bg-zinc-900 p-4 rounded-2xl overflow-auto">
-    {JSON.stringify(result, null, 2)}
-  </pre>
-</div>
-      )}
     </main>
   )
 }
