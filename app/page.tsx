@@ -26,8 +26,6 @@ export default function Home() {
 
       const data = await res.json()
 
-      console.log(data)
-
       setResult(data)
     } catch (err) {
       setResult({
@@ -47,8 +45,6 @@ export default function Home() {
         </h1>
 
         <div className="bg-zinc-900 rounded-3xl p-6">
-
-          {/* Kamera */}
           <label className="block mb-4">
             <span className="bg-white text-black rounded-2xl px-6 py-5 text-xl font-semibold block text-center">
               📸 Tag billede
@@ -63,7 +59,6 @@ export default function Home() {
             />
           </label>
 
-          {/* Flere billeder */}
           <label className="block">
             <span className="bg-zinc-800 border border-zinc-700 rounded-2xl px-6 py-5 text-xl font-semibold block text-center">
               🖼️ Vælg flere billeder
