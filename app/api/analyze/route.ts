@@ -49,7 +49,10 @@ export async function POST(req: Request) {
       const image = await Jimp.Jimp.read(buffer)
 
       // NORMALIZE SIZE
-      image.resize(1000, 1400)
+      image.resize({
+  width: 1000,
+  height: 1400,
+})
 
       const width = image.bitmap.width
       const height = image.bitmap.height
