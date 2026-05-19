@@ -1,5 +1,6 @@
- import { NextResponse } from 'next/server'
-import { Jimp } from 'jimp'
+import { NextResponse } from 'next/server'
+
+const Jimp = require('jimp')
 
 export async function POST(req: Request) {
 
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
       await file.arrayBuffer()
     )
 
-    const image = await Jimp.read(buffer)
+    const image = await Jimp.Jimp.read(buffer)
 
     // Fast størrelse
     image.resize({
