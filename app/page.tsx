@@ -1,72 +1,49 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
-declare global {
-  interface Window {
-    cv: any;
-  }
-}
-
-type Result = {
+type ScanResult = {
   file: string;
-  count: number;
   items: string[];
+  count: number;
 };
 
-const ITEMS = [
-  { name: "Røræg", x: 55, y: 355 },
-  { name: "Spejlæg", x: 55, y: 445 },
-  { name: "Modnet Havarti ost", x: 55, y: 540 },
-  { name: "Hjemmelavet blåbæryoghurt", x: 55, y: 635 },
-  { name: "Hjemmelavet chiagrød", x: 55, y: 760 },
+type Totals = {
+  [key: string]: number;
+};
 
-  { name: "Avocado og hytteost", x: 55, y: 980 },
-  { name: "Eksotisk frugtskål", x: 55, y: 1070 },
-  { name: "Smashed peas med forårsmynte", x: 55, y: 1165 },
+const MENU_ITEMS = [
+  { name: "Røræg", x: 92, y: 430 },
+  { name: "Spejlæg", x: 92, y: 530 },
+  { name: "Modnet Havarti ost", x: 92, y: 635 },
+  { name: "Hjemmelavet blåbæryoghurt", x: 92, y: 740 },
+  { name: "Hjemmelavet chiagrød", x: 92, y: 860 },
 
-  { name: "Pain au chocolat fra Meyers", x: 55, y: 1450 },
-  { name: "Øko. smørcroissant fra Meyers", x: 55, y: 1540 },
-  { name: "Mariagertoba-toast", x: 55, y: 1635 },
+  { name: "Avocado og hytteost", x: 92, y: 1120 },
+  { name: "Eksotisk frugtskål", x: 92, y: 1220 },
+  { name: "Smashed peas med forårsmynte", x: 92, y: 1320 },
 
-  { name: "Rösti", x: 520, y: 380 },
-  { name: "Hjemmelavet hønsesalat", x: 520, y: 490 },
-  { name: "Crispy chicken", x: 520, y: 605 },
-  { name: "2 brunchpølser", x: 520, y: 720 },
-  { name: "Koldrøget laks", x: 520, y: 840 },
+  { name: "Pain au chocolat fra Meyers", x: 92, y: 1660 },
+  { name: "Øko. smørcroissant fra Meyers", x: 92, y: 1760 },
+  { name: "Mariagertoba-toast", x: 92, y: 1860 },
 
-  { name: "Lun rabarber crumble", x: 520, y: 1120 },
-  { name: "Øllebrød med let vaniljeskum", x: 520, y: 1235 },
-  { name: "2 amerikanske pandekager", x: 520, y: 1355 },
+  { name: "Rösti", x: 620, y: 440 },
+  { name: "Hjemmelavet hønsesalat", x: 620, y: 560 },
+  { name: "Crispy chicken", x: 620, y: 690 },
+  { name: "2 brunchpølser", x: 620, y: 820 },
+  { name: "Koldrøget laks", x: 620, y: 960 },
+
+  { name: "Lun rabarber crumble", x: 620, y: 1280 },
+  { name: "Øllebrød med let vaniljeskum", x: 620, y: 1410 },
+  { name: "2 amerikanske pandekager", x: 620, y: 1550 },
 ];
 
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [results, setResults] = useState<Result[]>([]);
+  const [results, setResults] = useState<ScanResult[]>([]);
+  const [totals, setTotals] = useState<Totals>({});
   const [loading, setLoading] = useState(false);
-  const [opencvReady, setOpencvReady] = useState(false);
-
-  useEffect(() => {
-    const existing = document.getElementById("opencv-script");
-
-    if (existing) {
-      setOpencvReady(true);
-      return;
-    }
-
-    const script = document.createElement("script");
-
-    script.id = "opencv-script";
-    script.src = "https://docs.opencv.org/4.x/opencv.js";
-    script.async = true;
-
-    script.onload = () => {
-      setOpencvReady(true);
-    };
-
-    document.body.appendChild(script);
-  }, []);
 
   const processFiles = async (
     e: React.ChangeEvent<HTMLInputElement>
@@ -77,14 +54,20 @@ export default function Home() {
 
     setLoading(true);
 
-    const tempResults: Result[] = [];
+    const allResults: ScanResult[] = [];
+    const totalMap: Totals = {};
 
     for (const file of files) {
       const result = await scanImage(file);
 
-      tempResults.push(result);
+      allResults.push(result);
 
-      setResults([...tempResults]);
+      result.items.forEach((item) => {
+        totalMap[item] = (totalMap[item] || 0) + 1;
+      });
+
+      setResults([...allResults]);
+      setTotals({ ...totalMap });
     }
 
     setLoading(false);
@@ -92,18 +75,18 @@ export default function Home() {
 
   const scanImage = async (
     file: File
-  ): Promise<Result> => {
+  ): Promise<ScanResult> => {
     return new Promise((resolve) => {
       const img = new Image();
 
-      img.onload = async () => {
+      img.onload = () => {
         const canvas = canvasRef.current;
 
         if (!canvas) {
           resolve({
             file: file.name,
-            count: 0,
             items: [],
+            count: 0,
           });
 
           return;
@@ -114,253 +97,85 @@ export default function Home() {
         if (!ctx) {
           resolve({
             file: file.name,
-            count: 0,
             items: [],
+            count: 0,
           });
 
           return;
         }
 
+        // FAST FORMAT
         const WIDTH = 1000;
-        const HEIGHT = 1800;
+        const HEIGHT = 2100;
 
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
 
+        // SORT BAGGRUND
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        // AUTO CENTER CROP
+        const imgRatio = img.width / img.height;
+        const targetRatio = WIDTH / HEIGHT;
+
+        let drawWidth = WIDTH;
+        let drawHeight = HEIGHT;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        if (imgRatio > targetRatio) {
+          drawHeight = HEIGHT;
+          drawWidth = img.width * (HEIGHT / img.height);
+          offsetX = -(drawWidth - WIDTH) / 2;
+        } else {
+          drawWidth = WIDTH;
+          drawHeight = img.height * (WIDTH / img.width);
+          offsetY = -(drawHeight - HEIGHT) / 2;
+        }
+
         ctx.drawImage(
           img,
-          0,
-          0,
-          WIDTH,
-          HEIGHT
+          offsetX,
+          offsetY,
+          drawWidth,
+          drawHeight
         );
-
-        try {
-          if (window.cv) {
-            const cv = window.cv;
-
-            const src = cv.imread(canvas);
-
-            const gray = new cv.Mat();
-
-            cv.cvtColor(
-              src,
-              gray,
-              cv.COLOR_RGBA2GRAY
-            );
-
-            const blur = new cv.Mat();
-
-            cv.GaussianBlur(
-              gray,
-              blur,
-              new cv.Size(5, 5),
-              0
-            );
-
-            const edges = new cv.Mat();
-
-            cv.Canny(
-              blur,
-              edges,
-              75,
-              200
-            );
-
-            const contours = new cv.MatVector();
-            const hierarchy = new cv.Mat();
-
-            cv.findContours(
-              edges,
-              contours,
-              hierarchy,
-              cv.RETR_EXTERNAL,
-              cv.CHAIN_APPROX_SIMPLE
-            );
-
-            let biggest = null;
-            let maxArea = 0;
-
-            for (
-              let i = 0;
-              i < contours.size();
-              i++
-            ) {
-              const cnt = contours.get(i);
-
-              const area =
-                cv.contourArea(cnt);
-
-              if (area < 100000)
-                continue;
-
-              const peri =
-                cv.arcLength(cnt, true);
-
-              const approx = new cv.Mat();
-
-              cv.approxPolyDP(
-                cnt,
-                approx,
-                0.02 * peri,
-                true
-              );
-
-              if (approx.rows === 4) {
-                if (area > maxArea) {
-                  biggest = approx;
-                  maxArea = area;
-                }
-              }
-            }
-
-            if (biggest) {
-              const pts = [];
-
-              for (let i = 0; i < 4; i++) {
-                pts.push({
-                  x: biggest.data32S[i * 2],
-                  y:
-                    biggest.data32S[
-                      i * 2 + 1
-                    ],
-                });
-              }
-
-              pts.sort((a, b) => a.y - b.y);
-
-              const top = pts
-                .slice(0, 2)
-                .sort((a, b) => a.x - b.x);
-
-              const bottom = pts
-                .slice(2, 4)
-                .sort((a, b) => a.x - b.x);
-
-              const ordered = [
-                top[0],
-                top[1],
-                bottom[1],
-                bottom[0],
-              ];
-
-              const srcTri =
-                cv.matFromArray(
-                  4,
-                  1,
-                  cv.CV_32FC2,
-                  [
-                    ordered[0].x,
-                    ordered[0].y,
-
-                    ordered[1].x,
-                    ordered[1].y,
-
-                    ordered[2].x,
-                    ordered[2].y,
-
-                    ordered[3].x,
-                    ordered[3].y,
-                  ]
-                );
-
-              const dstTri =
-                cv.matFromArray(
-                  4,
-                  1,
-                  cv.CV_32FC2,
-                  [
-                    0,
-                    0,
-
-                    WIDTH,
-                    0,
-
-                    WIDTH,
-                    HEIGHT,
-
-                    0,
-                    HEIGHT,
-                  ]
-                );
-
-              const M =
-                cv.getPerspectiveTransform(
-                  srcTri,
-                  dstTri
-                );
-
-              const dst = new cv.Mat();
-
-              cv.warpPerspective(
-                src,
-                dst,
-                M,
-                new cv.Size(
-                  WIDTH,
-                  HEIGHT
-                )
-              );
-
-              cv.imshow(canvas, dst);
-
-              src.delete();
-              gray.delete();
-              blur.delete();
-              edges.delete();
-              contours.delete();
-              hierarchy.delete();
-              dst.delete();
-            }
-          }
-        } catch (e) {
-          console.log("opencv fallback", e);
-        }
 
         const selected: string[] = [];
 
-        ITEMS.forEach((item) => {
-          const boxSize = 38;
+        MENU_ITEMS.forEach((item) => {
+          // SCAN KUN INDERSIDE AF CHECKBOX
+          const scanX = item.x + 8;
+          const scanY = item.y + 8;
+          const scanSize = 28;
 
-          const imageData =
-            ctx.getImageData(
-              item.x + 6,
-              item.y + 6,
-              24,
-              24
-            );
+          const imageData = ctx.getImageData(
+            scanX,
+            scanY,
+            scanSize,
+            scanSize
+          );
 
           let inkPixels = 0;
+          let diagonalPixels = 0;
 
-          let diagonalHits = 0;
-
-          for (
-            let y = 0;
-            y < 24;
-            y++
-          ) {
-            for (
-              let x = 0;
-              x < 24;
-              x++
-            ) {
+          for (let y = 0; y < scanSize; y++) {
+            for (let x = 0; x < scanSize; x++) {
               const i =
-                (y * 24 + x) * 4;
+                (y * scanSize + x) * 4;
 
-              const r =
-                imageData.data[i];
-              const g =
-                imageData.data[i + 1];
-              const b =
-                imageData.data[i + 2];
+              const r = imageData.data[i];
+              const g = imageData.data[i + 1];
+              const b = imageData.data[i + 2];
 
               const brightness =
                 (r + g + b) / 3;
 
               const isBlue =
-                b > r + 20 &&
-                b > g + 20 &&
-                b > 60;
+                b > r + 25 &&
+                b > g + 25 &&
+                b > 70;
 
               const isDark =
                 brightness < 90;
@@ -368,36 +183,38 @@ export default function Home() {
               if (isBlue || isDark) {
                 inkPixels++;
 
-                // diagonal X detection
-                if (
-                  Math.abs(x - y) < 4 ||
+                // DETECT X SHAPE
+                const diag1 =
+                  Math.abs(x - y) < 4;
+
+                const diag2 =
                   Math.abs(
-                    x - (24 - y)
-                  ) < 4
-                ) {
-                  diagonalHits++;
+                    x - (scanSize - y)
+                  ) < 4;
+
+                if (diag1 || diag2) {
+                  diagonalPixels++;
                 }
               }
             }
           }
 
           const checked =
-            inkPixels > 30 &&
-            diagonalHits > 8;
+            inkPixels > 35 &&
+            diagonalPixels > 10;
 
+          // DEBUG BOXES
           ctx.strokeStyle = checked
             ? "#00ff00"
             : "#ff0000";
 
-          ctx.lineWidth = checked
-            ? 4
-            : 2;
+          ctx.lineWidth = checked ? 5 : 2;
 
           ctx.strokeRect(
             item.x,
             item.y,
-            boxSize,
-            boxSize
+            40,
+            40
           );
 
           if (checked) {
@@ -407,14 +224,20 @@ export default function Home() {
 
         resolve({
           file: file.name,
-          count: selected.length,
           items: selected,
+          count: selected.length,
         });
       };
 
       img.src = URL.createObjectURL(file);
     });
   };
+
+  const totalOrders = results.length;
+
+  const totalItems = Object.values(
+    totals
+  ).reduce((a, b) => a + b, 0);
 
   return (
     <main
@@ -429,8 +252,8 @@ export default function Home() {
     >
       <h1
         style={{
-          fontSize: 50,
-          marginBottom: 20,
+          fontSize: 52,
+          marginBottom: 10,
         }}
       >
         Brunch Scanner
@@ -439,18 +262,37 @@ export default function Home() {
       <div
         style={{
           border:
-            "5px solid #00ff88",
+            "6px solid #00ff88",
           borderRadius: 30,
           padding: 25,
           marginBottom: 30,
         }}
       >
-        <h2>Upload brunch billeder</h2>
+        <h2>Guide</h2>
 
-        <p>
-          Kamera, galleri og multi-upload
-          virker
-        </p>
+        <ul
+          style={{
+            lineHeight: 1.8,
+          }}
+        >
+          <li>
+            Hold menuen lodret
+          </li>
+
+          <li>
+            Fyld næsten hele billedet
+          </li>
+
+          <li>
+            God belysning giver bedst
+            resultat
+          </li>
+
+          <li>
+            Du kan vælge mange billeder
+            på én gang
+          </li>
+        </ul>
 
         <input
           type="file"
@@ -458,28 +300,17 @@ export default function Home() {
           accept="image/*"
           onChange={processFiles}
           style={{
+            marginTop: 20,
             fontSize: 18,
-            marginTop: 10,
           }}
         />
       </div>
 
-      {!opencvReady && (
-        <div
-          style={{
-            marginBottom: 20,
-            color: "#ffcc00",
-          }}
-        >
-          Loader OpenCV...
-        </div>
-      )}
-
       {loading && (
         <div
           style={{
+            fontSize: 28,
             marginBottom: 20,
-            fontSize: 24,
           }}
         >
           Scanner billeder...
@@ -490,32 +321,99 @@ export default function Home() {
         ref={canvasRef}
         style={{
           width: "100%",
-          borderRadius: 25,
+          borderRadius: 24,
           background: "#111",
-          marginBottom: 30,
+          marginBottom: 40,
         }}
       />
+
+      {results.length > 0 && (
+        <div
+          style={{
+            background: "#111",
+            padding: 25,
+            borderRadius: 24,
+            marginBottom: 40,
+          }}
+        >
+          <h2
+            style={{
+              fontSize: 38,
+            }}
+          >
+            Samlet opsummering
+          </h2>
+
+          <div
+            style={{
+              marginTop: 20,
+              display: "grid",
+              gap: 14,
+            }}
+          >
+            <div>
+              📄 Sedler scannet:{" "}
+              {totalOrders}
+            </div>
+
+            <div>
+              🍽️ Totale elementer:{" "}
+              {totalItems}
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 30,
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            {Object.entries(totals)
+              .sort((a, b) => b[1] - a[1])
+              .map(([item, count]) => (
+                <div
+                  key={item}
+                  style={{
+                    background: "#1d1d1d",
+                    padding: 14,
+                    borderRadius: 14,
+                    display: "flex",
+                    justifyContent:
+                      "space-between",
+                    fontSize: 20,
+                  }}
+                >
+                  <span>{item}</span>
+
+                  <strong>{count}</strong>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {results.map((result, i) => (
         <div
           key={i}
           style={{
             background: "#111",
-            borderRadius: 25,
-            padding: 25,
-            marginBottom: 25,
+            borderRadius: 24,
+            padding: 24,
+            marginBottom: 24,
           }}
         >
           <h2>{result.file}</h2>
 
           <h3>
-            Fundet {result.count} elementer
+            Fundet {result.count}{" "}
+            elementer
           </h3>
 
           <div
             style={{
               display: "grid",
-              gap: 12,
+              gap: 10,
               marginTop: 20,
             }}
           >
@@ -524,9 +422,9 @@ export default function Home() {
                 key={item}
                 style={{
                   background: "#1f1f1f",
-                  padding: 16,
+                  padding: 14,
                   borderRadius: 14,
-                  fontSize: 22,
+                  fontSize: 20,
                 }}
               >
                 ✅ {item}
