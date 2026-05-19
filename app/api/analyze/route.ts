@@ -1,5 +1,5 @@
  import { NextResponse } from 'next/server'
-import { Jimp, intToRGBA } from 'jimp'
+import { Jimp } from 'jimp'
 
 export async function POST(req: Request) {
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
         const color =
           image.getPixelColor(x, y)
 
-        const rgba = intToRGBA(color)
+        const rgba = Jimp.intToRGBA(color)
 
         const brightness =
           (rgba.r + rgba.g + rgba.b) / 3
