@@ -1,145 +1,90 @@
- 'use client'
+"use client";
 
-import { useState } from 'react'
+import { useState } from "react";
 
 export default function Home() {
+  const [count, setCount] = useState<number | null>(null);
+  const [preview, setPreview] = useState<string>("");
 
-  const [file, setFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const handleImage = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const [result, setResult] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
+    const url = URL.createObjectURL(file);
+    setPreview(url);
 
-  const upload = async () => {
+    const img = new Image();
+    img.src = url;
 
-    if (!file) return
+    img.onload = async () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
 
-    setLoading(true)
+      canvas.width = img.width;
+      canvas.height = img.height;
 
-    const formData = new FormData()
+      ctx?.drawImage(img, 0, 0);
 
-    formData.append('image', file)
+      const imageData = ctx?.getImageData(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
 
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      body: formData,
-    })
+      if (!imageData) return;
 
-    const data = await res.json()
+      let bluePixels = 0;
 
-    setResult(data)
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        const r = imageData.data[i];
+        const g = imageData.data[i + 1];
+        const b = imageData.data[i + 2];
 
-    setLoading(false)
-  }
+        // Finder blå kuglepen/farve
+        if (b > 100 && b > r + 20 && b > g + 20) {
+          bluePixels++;
+        }
+      }
+
+      // grov estimering
+      const estimatedChecks = Math.round(bluePixels / 1200);
+
+      setCount(estimatedChecks);
+    };
+  };
 
   return (
-    <main className="min-h-screen bg-black text-white p-6">
+    <main
+      style={{
+        padding: 20,
+        color: "white",
+        background: "black",
+        minHeight: "100vh",
+      }}
+    >
+      <h1>Brunch Scanner</h1>
 
-      <div className="max-w-md mx-auto">
+      <input type="file" accept="image/*" onChange={handleImage} />
 
-        <h1 className="text-4xl font-bold mb-8">
-          Brunch Scanner
-        </h1>
+      {preview && (
+        <img
+          src={preview}
+          style={{
+            width: "100%",
+            marginTop: 20,
+            borderRadius: 10,
+          }}
+        />
+      )}
 
-        {/* FRAME */}
-        <div className="relative w-full aspect-[3/4] border-4 border-green-500 rounded-3xl overflow-hidden bg-zinc-900">
-
-          {preview ? (
-
-            <img
-              src={preview}
-              alt="preview"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-
-          ) : (
-
-            <div className="absolute inset-0 flex items-center justify-center text-zinc-500">
-              Intet billede valgt
-            </div>
-
-          )}
-
-          <div className="absolute inset-0 border-[40px] border-black/40 rounded-3xl pointer-events-none" />
-
-        </div>
-
-        <label className="block mt-6">
-
-          <span className="bg-white text-black rounded-2xl py-5 text-xl font-bold text-center block">
-            📸 Tag billede
-          </span>
-
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-
-              const selectedFile =
-                e.target.files?.[0]
-
-              if (!selectedFile) return
-
-              setFile(selectedFile)
-
-              const imageUrl =
-                URL.createObjectURL(selectedFile)
-
-              setPreview(imageUrl)
-
-            }}
-          />
-
-        </label>
-
-        <button
-          onClick={upload}
-          disabled={!file || loading}
-          className="w-full mt-4 bg-green-500 text-black rounded-2xl py-5 text-xl font-bold disabled:opacity-40"
-        >
-          {loading
-            ? 'Scanner...'
-            : 'Start scanning'}
-        </button>
-
-        {result?.image && (
-
-          <img
-            src={result.image}
-            alt="debug"
-            className="w-full rounded-2xl mt-6"
-          />
-
-        )}
-
-        {result?.totals && (
-
-          <div className="mt-8 space-y-3">
-
-            {Object.entries(result.totals)
-              .filter(([_, count]) => Number(count) > 0)
-              .map(([name, count]) => (
-
-                <div
-                  key={name}
-                  className="bg-zinc-900 rounded-2xl p-4 flex justify-between"
-                >
-                  <span>{name}</span>
-
-                  <span className="font-bold">
-                    {count as number}
-                  </span>
-                </div>
-
-              ))}
-
-          </div>
-
-        )}
-
-      </div>
-
+      {count !== null && (
+        <h2 style={{ marginTop: 20 }}>
+          Valgte elementer: {count}
+        </h2>
+      )}
     </main>
-  )
+  );
 }
