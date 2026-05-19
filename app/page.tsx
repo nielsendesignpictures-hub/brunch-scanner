@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 declare global {
   interface Window {
@@ -8,45 +8,67 @@ declare global {
   }
 }
 
-type ScanResult = {
+type Result = {
   file: string;
   count: number;
   items: string[];
 };
 
-const BOXES = [
-  { name: "Røræg", x: 70, y: 360 },
-  { name: "Spejlæg", x: 70, y: 450 },
-  { name: "Modnet Havarti ost", x: 70, y: 540 },
-  { name: "Hjemmelavet blåbæryoghurt", x: 70, y: 640 },
-  { name: "Hjemmelavet chiagrød", x: 70, y: 760 },
+const ITEMS = [
+  { name: "Røræg", x: 55, y: 355 },
+  { name: "Spejlæg", x: 55, y: 445 },
+  { name: "Modnet Havarti ost", x: 55, y: 540 },
+  { name: "Hjemmelavet blåbæryoghurt", x: 55, y: 635 },
+  { name: "Hjemmelavet chiagrød", x: 55, y: 760 },
 
-  { name: "Avocado og hytteost", x: 70, y: 980 },
-  { name: "Eksotisk frugtskål", x: 70, y: 1080 },
-  { name: "Smashed peas med forårsmynte", x: 70, y: 1180 },
+  { name: "Avocado og hytteost", x: 55, y: 980 },
+  { name: "Eksotisk frugtskål", x: 55, y: 1070 },
+  { name: "Smashed peas med forårsmynte", x: 55, y: 1165 },
 
-  { name: "Pain au chocolat fra Meyers", x: 70, y: 1450 },
-  { name: "Øko. smørcroissant fra Meyers", x: 70, y: 1550 },
-  { name: "Mariagertoba-toast", x: 70, y: 1650 },
+  { name: "Pain au chocolat fra Meyers", x: 55, y: 1450 },
+  { name: "Øko. smørcroissant fra Meyers", x: 55, y: 1540 },
+  { name: "Mariagertoba-toast", x: 55, y: 1635 },
 
-  { name: "Rösti", x: 600, y: 380 },
-  { name: "Hjemmelavet hønsesalat", x: 600, y: 490 },
-  { name: "Crispy chicken", x: 600, y: 610 },
-  { name: "2 brunchpølser", x: 600, y: 730 },
-  { name: "Koldrøget laks", x: 600, y: 850 },
+  { name: "Rösti", x: 520, y: 380 },
+  { name: "Hjemmelavet hønsesalat", x: 520, y: 490 },
+  { name: "Crispy chicken", x: 520, y: 605 },
+  { name: "2 brunchpølser", x: 520, y: 720 },
+  { name: "Koldrøget laks", x: 520, y: 840 },
 
-  { name: "Lun rabarber crumble", x: 600, y: 1120 },
-  { name: "Øllebrød med let vaniljeskum", x: 600, y: 1240 },
-  { name: "2 amerikanske pandekager", x: 600, y: 1370 },
+  { name: "Lun rabarber crumble", x: 520, y: 1120 },
+  { name: "Øllebrød med let vaniljeskum", x: 520, y: 1235 },
+  { name: "2 amerikanske pandekager", x: 520, y: 1355 },
 ];
 
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [results, setResults] = useState<ScanResult[]>([]);
+  const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
+  const [opencvReady, setOpencvReady] = useState(false);
 
-  const processImages = async (
+  useEffect(() => {
+    const existing = document.getElementById("opencv-script");
+
+    if (existing) {
+      setOpencvReady(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+
+    script.id = "opencv-script";
+    script.src = "https://docs.opencv.org/4.x/opencv.js";
+    script.async = true;
+
+    script.onload = () => {
+      setOpencvReady(true);
+    };
+
+    document.body.appendChild(script);
+  }, []);
+
+  const processFiles = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = Array.from(e.target.files || []);
@@ -55,24 +77,26 @@ export default function Home() {
 
     setLoading(true);
 
-    const allResults: ScanResult[] = [];
+    const tempResults: Result[] = [];
 
     for (const file of files) {
-      const result = await scanFile(file);
+      const result = await scanImage(file);
 
-      allResults.push(result);
+      tempResults.push(result);
 
-      setResults([...allResults]);
+      setResults([...tempResults]);
     }
 
     setLoading(false);
   };
 
-  const scanFile = async (file: File): Promise<ScanResult> => {
+  const scanImage = async (
+    file: File
+  ): Promise<Result> => {
     return new Promise((resolve) => {
       const img = new Image();
 
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = canvasRef.current;
 
         if (!canvas) {
@@ -97,240 +121,294 @@ export default function Home() {
           return;
         }
 
-        const TARGET_WIDTH = 1000;
-        const TARGET_HEIGHT = 1800;
+        const WIDTH = 1000;
+        const HEIGHT = 1800;
 
-        canvas.width = TARGET_WIDTH;
-        canvas.height = TARGET_HEIGHT;
+        canvas.width = WIDTH;
+        canvas.height = HEIGHT;
 
         ctx.drawImage(
           img,
           0,
           0,
-          TARGET_WIDTH,
-          TARGET_HEIGHT
+          WIDTH,
+          HEIGHT
         );
 
         try {
-          const cv = window.cv;
+          if (window.cv) {
+            const cv = window.cv;
 
-          if (!cv) {
-            throw new Error("OpenCV not loaded");
-          }
+            const src = cv.imread(canvas);
 
-          let src = cv.imread(canvas);
+            const gray = new cv.Mat();
 
-          let gray = new cv.Mat();
-
-          cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-          let blur = new cv.Mat();
-
-          cv.GaussianBlur(
-            gray,
-            blur,
-            new cv.Size(5, 5),
-            0
-          );
-
-          let edges = new cv.Mat();
-
-          cv.Canny(blur, edges, 75, 200);
-
-          let contours = new cv.MatVector();
-          let hierarchy = new cv.Mat();
-
-          cv.findContours(
-            edges,
-            contours,
-            hierarchy,
-            cv.RETR_EXTERNAL,
-            cv.CHAIN_APPROX_SIMPLE
-          );
-
-          let biggest = null;
-          let maxArea = 0;
-
-          for (let i = 0; i < contours.size(); i++) {
-            const cnt = contours.get(i);
-
-            const area = cv.contourArea(cnt);
-
-            if (area < 100000) continue;
-
-            const peri = cv.arcLength(cnt, true);
-
-            const approx = new cv.Mat();
-
-            cv.approxPolyDP(
-              cnt,
-              approx,
-              0.02 * peri,
-              true
+            cv.cvtColor(
+              src,
+              gray,
+              cv.COLOR_RGBA2GRAY
             );
 
-            if (approx.rows === 4) {
-              if (area > maxArea) {
-                biggest = approx;
-                maxArea = area;
+            const blur = new cv.Mat();
+
+            cv.GaussianBlur(
+              gray,
+              blur,
+              new cv.Size(5, 5),
+              0
+            );
+
+            const edges = new cv.Mat();
+
+            cv.Canny(
+              blur,
+              edges,
+              75,
+              200
+            );
+
+            const contours = new cv.MatVector();
+            const hierarchy = new cv.Mat();
+
+            cv.findContours(
+              edges,
+              contours,
+              hierarchy,
+              cv.RETR_EXTERNAL,
+              cv.CHAIN_APPROX_SIMPLE
+            );
+
+            let biggest = null;
+            let maxArea = 0;
+
+            for (
+              let i = 0;
+              i < contours.size();
+              i++
+            ) {
+              const cnt = contours.get(i);
+
+              const area =
+                cv.contourArea(cnt);
+
+              if (area < 100000)
+                continue;
+
+              const peri =
+                cv.arcLength(cnt, true);
+
+              const approx = new cv.Mat();
+
+              cv.approxPolyDP(
+                cnt,
+                approx,
+                0.02 * peri,
+                true
+              );
+
+              if (approx.rows === 4) {
+                if (area > maxArea) {
+                  biggest = approx;
+                  maxArea = area;
+                }
+              }
+            }
+
+            if (biggest) {
+              const pts = [];
+
+              for (let i = 0; i < 4; i++) {
+                pts.push({
+                  x: biggest.data32S[i * 2],
+                  y:
+                    biggest.data32S[
+                      i * 2 + 1
+                    ],
+                });
+              }
+
+              pts.sort((a, b) => a.y - b.y);
+
+              const top = pts
+                .slice(0, 2)
+                .sort((a, b) => a.x - b.x);
+
+              const bottom = pts
+                .slice(2, 4)
+                .sort((a, b) => a.x - b.x);
+
+              const ordered = [
+                top[0],
+                top[1],
+                bottom[1],
+                bottom[0],
+              ];
+
+              const srcTri =
+                cv.matFromArray(
+                  4,
+                  1,
+                  cv.CV_32FC2,
+                  [
+                    ordered[0].x,
+                    ordered[0].y,
+
+                    ordered[1].x,
+                    ordered[1].y,
+
+                    ordered[2].x,
+                    ordered[2].y,
+
+                    ordered[3].x,
+                    ordered[3].y,
+                  ]
+                );
+
+              const dstTri =
+                cv.matFromArray(
+                  4,
+                  1,
+                  cv.CV_32FC2,
+                  [
+                    0,
+                    0,
+
+                    WIDTH,
+                    0,
+
+                    WIDTH,
+                    HEIGHT,
+
+                    0,
+                    HEIGHT,
+                  ]
+                );
+
+              const M =
+                cv.getPerspectiveTransform(
+                  srcTri,
+                  dstTri
+                );
+
+              const dst = new cv.Mat();
+
+              cv.warpPerspective(
+                src,
+                dst,
+                M,
+                new cv.Size(
+                  WIDTH,
+                  HEIGHT
+                )
+              );
+
+              cv.imshow(canvas, dst);
+
+              src.delete();
+              gray.delete();
+              blur.delete();
+              edges.delete();
+              contours.delete();
+              hierarchy.delete();
+              dst.delete();
+            }
+          }
+        } catch (e) {
+          console.log("opencv fallback", e);
+        }
+
+        const selected: string[] = [];
+
+        ITEMS.forEach((item) => {
+          const boxSize = 38;
+
+          const imageData =
+            ctx.getImageData(
+              item.x + 6,
+              item.y + 6,
+              24,
+              24
+            );
+
+          let inkPixels = 0;
+
+          let diagonalHits = 0;
+
+          for (
+            let y = 0;
+            y < 24;
+            y++
+          ) {
+            for (
+              let x = 0;
+              x < 24;
+              x++
+            ) {
+              const i =
+                (y * 24 + x) * 4;
+
+              const r =
+                imageData.data[i];
+              const g =
+                imageData.data[i + 1];
+              const b =
+                imageData.data[i + 2];
+
+              const brightness =
+                (r + g + b) / 3;
+
+              const isBlue =
+                b > r + 20 &&
+                b > g + 20 &&
+                b > 60;
+
+              const isDark =
+                brightness < 90;
+
+              if (isBlue || isDark) {
+                inkPixels++;
+
+                // diagonal X detection
+                if (
+                  Math.abs(x - y) < 4 ||
+                  Math.abs(
+                    x - (24 - y)
+                  ) < 4
+                ) {
+                  diagonalHits++;
+                }
               }
             }
           }
 
-          if (biggest) {
-            const points = [];
+          const checked =
+            inkPixels > 30 &&
+            diagonalHits > 8;
 
-            for (let i = 0; i < 4; i++) {
-              points.push({
-                x: biggest.data32S[i * 2],
-                y: biggest.data32S[i * 2 + 1],
-              });
-            }
+          ctx.strokeStyle = checked
+            ? "#00ff00"
+            : "#ff0000";
 
-            points.sort((a, b) => a.y - b.y);
+          ctx.lineWidth = checked
+            ? 4
+            : 2;
 
-            const top = points.slice(0, 2);
-            const bottom = points.slice(2, 4);
-
-            top.sort((a, b) => a.x - b.x);
-            bottom.sort((a, b) => a.x - b.x);
-
-            const ordered = [
-              top[0],
-              top[1],
-              bottom[1],
-              bottom[0],
-            ];
-
-            const srcTri = cv.matFromArray(
-              4,
-              1,
-              cv.CV_32FC2,
-              [
-                ordered[0].x,
-                ordered[0].y,
-
-                ordered[1].x,
-                ordered[1].y,
-
-                ordered[2].x,
-                ordered[2].y,
-
-                ordered[3].x,
-                ordered[3].y,
-              ]
-            );
-
-            const dstTri = cv.matFromArray(
-              4,
-              1,
-              cv.CV_32FC2,
-              [
-                0,
-                0,
-
-                TARGET_WIDTH,
-                0,
-
-                TARGET_WIDTH,
-                TARGET_HEIGHT,
-
-                0,
-                TARGET_HEIGHT,
-              ]
-            );
-
-            const M = cv.getPerspectiveTransform(
-              srcTri,
-              dstTri
-            );
-
-            const dst = new cv.Mat();
-
-            cv.warpPerspective(
-              src,
-              dst,
-              M,
-              new cv.Size(
-                TARGET_WIDTH,
-                TARGET_HEIGHT
-              )
-            );
-
-            cv.imshow(canvas, dst);
-
-            src.delete();
-            gray.delete();
-            blur.delete();
-            edges.delete();
-            contours.delete();
-            hierarchy.delete();
-            dst.delete();
-          }
-        } catch (err) {
-          console.log("OpenCV fallback", err);
-        }
-
-        const found: string[] = [];
-
-        BOXES.forEach((box) => {
-          const imageData = ctx.getImageData(
-            box.x,
-            box.y,
-            55,
-            55
+          ctx.strokeRect(
+            item.x,
+            item.y,
+            boxSize,
+            boxSize
           );
 
-          let darkPixels = 0;
-
-          for (
-            let i = 0;
-            i < imageData.data.length;
-            i += 4
-          ) {
-            const r = imageData.data[i];
-            const g = imageData.data[i + 1];
-            const b = imageData.data[i + 2];
-
-            const brightness = (r + g + b) / 3;
-
-            // detect kuglepen / blyant / mørke streger
-            if (brightness < 140) {
-              darkPixels++;
-            }
-          }
-
-          // threshold
-          if (darkPixels > 250) {
-            found.push(box.name);
-
-            // visual debug
-            ctx.strokeStyle = "#00ff00";
-            ctx.lineWidth = 4;
-
-            ctx.strokeRect(
-              box.x,
-              box.y,
-              55,
-              55
-            );
-          } else {
-            ctx.strokeStyle = "#ff0000";
-            ctx.lineWidth = 2;
-
-            ctx.strokeRect(
-              box.x,
-              box.y,
-              55,
-              55
-            );
+          if (checked) {
+            selected.push(item.name);
           }
         });
 
         resolve({
           file: file.name,
-          count: found.length,
-          items: found,
+          count: selected.length,
+          items: selected,
         });
       };
 
@@ -341,16 +419,17 @@ export default function Home() {
   return (
     <main
       style={{
-        minHeight: "100vh",
         background: "#000",
         color: "#fff",
+        minHeight: "100vh",
         padding: 20,
-        fontFamily: "sans-serif",
+        fontFamily:
+          "-apple-system, sans-serif",
       }}
     >
       <h1
         style={{
-          fontSize: 48,
+          fontSize: 50,
           marginBottom: 20,
         }}
       >
@@ -359,36 +438,48 @@ export default function Home() {
 
       <div
         style={{
-          border: "4px solid #00ff88",
-          borderRadius: 24,
-          padding: 20,
-          marginBottom: 20,
+          border:
+            "5px solid #00ff88",
+          borderRadius: 30,
+          padding: 25,
+          marginBottom: 30,
         }}
       >
-        <h2>Upload billeder</h2>
+        <h2>Upload brunch billeder</h2>
 
         <p>
-          Du kan vælge mange billeder på én
-          gang
+          Kamera, galleri og multi-upload
+          virker
         </p>
 
         <input
           type="file"
           multiple
           accept="image/*"
-          onChange={processImages}
+          onChange={processFiles}
           style={{
-            fontSize: 20,
+            fontSize: 18,
             marginTop: 10,
           }}
         />
       </div>
 
+      {!opencvReady && (
+        <div
+          style={{
+            marginBottom: 20,
+            color: "#ffcc00",
+          }}
+        >
+          Loader OpenCV...
+        </div>
+      )}
+
       {loading && (
         <div
           style={{
             marginBottom: 20,
-            fontSize: 22,
+            fontSize: 24,
           }}
         >
           Scanner billeder...
@@ -399,42 +490,43 @@ export default function Home() {
         ref={canvasRef}
         style={{
           width: "100%",
-          borderRadius: 20,
-          marginBottom: 30,
+          borderRadius: 25,
           background: "#111",
+          marginBottom: 30,
         }}
       />
 
-      {results.map((r, index) => (
+      {results.map((result, i) => (
         <div
-          key={index}
+          key={i}
           style={{
             background: "#111",
-            padding: 20,
-            borderRadius: 20,
-            marginBottom: 20,
+            borderRadius: 25,
+            padding: 25,
+            marginBottom: 25,
           }}
         >
-          <h2>{r.file}</h2>
+          <h2>{result.file}</h2>
 
           <h3>
-            Fundet {r.count} elementer
+            Fundet {result.count} elementer
           </h3>
 
           <div
             style={{
               display: "grid",
-              gap: 10,
-              marginTop: 15,
+              gap: 12,
+              marginTop: 20,
             }}
           >
-            {r.items.map((item) => (
+            {result.items.map((item) => (
               <div
                 key={item}
                 style={{
                   background: "#1f1f1f",
-                  padding: 12,
-                  borderRadius: 12,
+                  padding: 16,
+                  borderRadius: 14,
+                  fontSize: 22,
                 }}
               >
                 ✅ {item}
@@ -443,11 +535,6 @@ export default function Home() {
           </div>
         </div>
       ))}
-
-      <script
-        async
-        src="https://docs.opencv.org/4.x/opencv.js"
-      />
     </main>
   );
 }
