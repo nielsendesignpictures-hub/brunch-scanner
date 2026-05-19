@@ -37,7 +37,13 @@ const BOXES = [
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<
+  {
+    file: string;
+    count: number;
+    items: string[];
+  }[]
+>([]);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -54,7 +60,11 @@ export default function Home() {
   ) => {
     const files = Array.from(e.target.files || []);
 
-    const allResults = [];
+    const allResults: {
+  file: string;
+  count: number;
+  items: string[];
+}[] = [];
 
     for (const file of files) {
       const img = new Image();
