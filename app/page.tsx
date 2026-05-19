@@ -2,60 +2,74 @@
 
 import { useRef, useState } from "react";
 
+declare global {
+  interface Window {
+    cv: any;
+  }
+}
+
 type ScanResult = {
   file: string;
   items: string[];
   count: number;
 };
 
-type Totals = {
-  [key: string]: number;
-};
+const MENU_NAMES = [
+  "Røræg",
+  "Spejlæg",
+  "Modnet Havarti ost",
+  "Hjemmelavet blåbæryoghurt",
+  "Hjemmelavet chiagrød",
 
-const MENU_ITEMS = [
-  { name: "Røræg", x: 92, y: 430 },
-  { name: "Spejlæg", x: 92, y: 530 },
-  { name: "Modnet Havarti ost", x: 92, y: 635 },
-  { name: "Hjemmelavet blåbæryoghurt", x: 92, y: 740 },
-  { name: "Hjemmelavet chiagrød", x: 92, y: 860 },
+  "Avocado og hytteost",
+  "Eksotisk frugtskål",
+  "Smashed peas med forårsmynte",
 
-  { name: "Avocado og hytteost", x: 92, y: 1120 },
-  { name: "Eksotisk frugtskål", x: 92, y: 1220 },
-  { name: "Smashed peas med forårsmynte", x: 92, y: 1320 },
+  "Pain au chocolat fra Meyers",
+  "Øko. smørcroissant fra Meyers",
+  "Mariagertoba-toast",
 
-  { name: "Pain au chocolat fra Meyers", x: 92, y: 1660 },
-  { name: "Øko. smørcroissant fra Meyers", x: 92, y: 1760 },
-  { name: "Mariagertoba-toast", x: 92, y: 1860 },
+  "Rösti",
+  "Hjemmelavet hønsesalat",
+  "Crispy chicken",
+  "2 brunchpølser",
+  "Koldrøget laks",
 
-  { name: "Rösti", x: 620, y: 440 },
-  { name: "Hjemmelavet hønsesalat", x: 620, y: 560 },
-  { name: "Crispy chicken", x: 620, y: 690 },
-  { name: "2 brunchpølser", x: 620, y: 820 },
-  { name: "Koldrøget laks", x: 620, y: 960 },
-
-  { name: "Lun rabarber crumble", x: 620, y: 1280 },
-  { name: "Øllebrød med let vaniljeskum", x: 620, y: 1410 },
-  { name: "2 amerikanske pandekager", x: 620, y: 1550 },
+  "Lun rabarber crumble",
+  "Øllebrød med let vaniljeskum",
+  "2 amerikanske pandekager",
 ];
 
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [results, setResults] = useState<ScanResult[]>([]);
-  const [totals, setTotals] = useState<Totals>({});
-  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<
+    ScanResult[]
+  >([]);
+
+  const [totals, setTotals] = useState<{
+    [key: string]: number;
+  }>({});
+
+  const [loading, setLoading] =
+    useState(false);
 
   const processFiles = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const files = Array.from(e.target.files || []);
+    const files = Array.from(
+      e.target.files || []
+    );
 
     if (!files.length) return;
 
     setLoading(true);
 
     const allResults: ScanResult[] = [];
-    const totalMap: Totals = {};
+
+    const totalMap: {
+      [key: string]: number;
+    } = {};
 
     for (const file of files) {
       const result = await scanImage(file);
@@ -63,7 +77,8 @@ export default function Home() {
       allResults.push(result);
 
       result.items.forEach((item) => {
-        totalMap[item] = (totalMap[item] || 0) + 1;
+        totalMap[item] =
+          (totalMap[item] || 0) + 1;
       });
 
       setResults([...allResults]);
@@ -92,7 +107,8 @@ export default function Home() {
           return;
         }
 
-        const ctx = canvas.getContext("2d");
+        const ctx =
+          canvas.getContext("2d");
 
         if (!ctx) {
           resolve({
@@ -104,35 +120,38 @@ export default function Home() {
           return;
         }
 
-        // FAST FORMAT
-        const WIDTH = 1000;
-        const HEIGHT = 2100;
+        const WIDTH = 1200;
+        const HEIGHT = 2200;
 
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
 
-        // SORT BAGGRUND
         ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        ctx.fillRect(
+          0,
+          0,
+          WIDTH,
+          HEIGHT
+        );
 
-        // AUTO CENTER CROP
-        const imgRatio = img.width / img.height;
-        const targetRatio = WIDTH / HEIGHT;
+        // normalize image
+        const ratio =
+          img.width / img.height;
 
         let drawWidth = WIDTH;
-        let drawHeight = HEIGHT;
-        let offsetX = 0;
-        let offsetY = 0;
+        let drawHeight =
+          WIDTH / ratio;
 
-        if (imgRatio > targetRatio) {
+        if (drawHeight < HEIGHT) {
           drawHeight = HEIGHT;
-          drawWidth = img.width * (HEIGHT / img.height);
-          offsetX = -(drawWidth - WIDTH) / 2;
-        } else {
-          drawWidth = WIDTH;
-          drawHeight = img.height * (WIDTH / img.width);
-          offsetY = -(drawHeight - HEIGHT) / 2;
+          drawWidth = HEIGHT * ratio;
         }
+
+        const offsetX =
+          (WIDTH - drawWidth) / 2;
+
+        const offsetY =
+          (HEIGHT - drawHeight) / 2;
 
         ctx.drawImage(
           img,
@@ -142,102 +161,259 @@ export default function Home() {
           drawHeight
         );
 
-        const selected: string[] = [];
+        try {
+          const cv = window.cv;
 
-        MENU_ITEMS.forEach((item) => {
-          // SCAN KUN INDERSIDE AF CHECKBOX
-          const scanX = item.x + 8;
-          const scanY = item.y + 8;
-          const scanSize = 28;
+          if (!cv) {
+            resolve({
+              file: file.name,
+              items: [],
+              count: 0,
+            });
 
-          const imageData = ctx.getImageData(
-            scanX,
-            scanY,
-            scanSize,
-            scanSize
+            return;
+          }
+
+          const src = cv.imread(canvas);
+
+          const gray = new cv.Mat();
+
+          cv.cvtColor(
+            src,
+            gray,
+            cv.COLOR_RGBA2GRAY
           );
 
-          let inkPixels = 0;
-          let diagonalPixels = 0;
+          const thresh =
+            new cv.Mat();
 
-          for (let y = 0; y < scanSize; y++) {
-            for (let x = 0; x < scanSize; x++) {
-              const i =
-                (y * scanSize + x) * 4;
+          cv.adaptiveThreshold(
+            gray,
+            thresh,
+            255,
+            cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv.THRESH_BINARY_INV,
+            11,
+            2
+          );
 
-              const r = imageData.data[i];
-              const g = imageData.data[i + 1];
-              const b = imageData.data[i + 2];
+          const contours =
+            new cv.MatVector();
 
-              const brightness =
-                (r + g + b) / 3;
+          const hierarchy =
+            new cv.Mat();
 
-              const isBlue =
-                b > r + 25 &&
-                b > g + 25 &&
-                b > 70;
+          cv.findContours(
+            thresh,
+            contours,
+            hierarchy,
+            cv.RETR_TREE,
+            cv.CHAIN_APPROX_SIMPLE
+          );
 
-              const isDark =
-                brightness < 90;
+          const boxes: {
+            x: number;
+            y: number;
+            w: number;
+            h: number;
+          }[] = [];
 
-              if (isBlue || isDark) {
-                inkPixels++;
+          for (
+            let i = 0;
+            i < contours.size();
+            i++
+          ) {
+            const cnt =
+              contours.get(i);
 
-                // DETECT X SHAPE
-                const diag1 =
-                  Math.abs(x - y) < 4;
+            const rect =
+              cv.boundingRect(cnt);
 
-                const diag2 =
-                  Math.abs(
-                    x - (scanSize - y)
-                  ) < 4;
+            const ratio =
+              rect.w / rect.h;
 
-                if (diag1 || diag2) {
-                  diagonalPixels++;
-                }
-              }
+            const area =
+              rect.w * rect.h;
+
+            // checkbox filter
+            const isSquare =
+              ratio > 0.8 &&
+              ratio < 1.2;
+
+            const validSize =
+              area > 300 &&
+              area < 2500;
+
+            if (
+              isSquare &&
+              validSize
+            ) {
+              boxes.push(rect);
             }
           }
 
-          const checked =
-            inkPixels > 35 &&
-            diagonalPixels > 10;
+          // remove duplicates
+          const filtered =
+            boxes.filter(
+              (box, index, self) => {
+                return (
+                  index ===
+                  self.findIndex(
+                    (b) =>
+                      Math.abs(
+                        b.x - box.x
+                      ) < 10 &&
+                      Math.abs(
+                        b.y - box.y
+                      ) < 10
+                  )
+                );
+              }
+            );
 
-          // DEBUG BOXES
-          ctx.strokeStyle = checked
-            ? "#00ff00"
-            : "#ff0000";
+          // sort top->bottom
+          filtered.sort((a, b) => {
+            if (
+              Math.abs(a.y - b.y) <
+              40
+            ) {
+              return a.x - b.x;
+            }
 
-          ctx.lineWidth = checked ? 5 : 2;
+            return a.y - b.y;
+          });
 
-          ctx.strokeRect(
-            item.x,
-            item.y,
-            40,
-            40
+          // keep likely menu checkboxes
+          const finalBoxes =
+            filtered.slice(0, 25);
+
+          const selected: string[] = [];
+
+          finalBoxes.forEach(
+            (box, index) => {
+              const inner =
+                ctx.getImageData(
+                  box.x + 5,
+                  box.y + 5,
+                  box.w - 10,
+                  box.h - 10
+                );
+
+              let dark = 0;
+              let diagonal = 0;
+
+              const size =
+                box.w - 10;
+
+              for (
+                let y = 0;
+                y < size;
+                y++
+              ) {
+                for (
+                  let x = 0;
+                  x < size;
+                  x++
+                ) {
+                  const i =
+                    (y * size + x) *
+                    4;
+
+                  const r =
+                    inner.data[i];
+
+                  const g =
+                    inner.data[i + 1];
+
+                  const b =
+                    inner.data[i + 2];
+
+                  const brightness =
+                    (r + g + b) /
+                    3;
+
+                  const isBlue =
+                    b > r + 20 &&
+                    b > g + 20 &&
+                    b > 70;
+
+                  const isDark =
+                    brightness < 90;
+
+                  if (
+                    isBlue ||
+                    isDark
+                  ) {
+                    dark++;
+
+                    const d1 =
+                      Math.abs(
+                        x - y
+                      ) < 4;
+
+                    const d2 =
+                      Math.abs(
+                        x -
+                          (size - y)
+                      ) < 4;
+
+                    if (d1 || d2) {
+                      diagonal++;
+                    }
+                  }
+                }
+              }
+
+              const checked =
+                dark > 40 &&
+                diagonal > 8;
+
+              ctx.strokeStyle =
+                checked
+                  ? "#00ff00"
+                  : "#ff0000";
+
+              ctx.lineWidth =
+                checked ? 5 : 2;
+
+              ctx.strokeRect(
+                box.x,
+                box.y,
+                box.w,
+                box.h
+              );
+
+              if (
+                checked &&
+                MENU_NAMES[index]
+              ) {
+                selected.push(
+                  MENU_NAMES[index]
+                );
+              }
+            }
           );
 
-          if (checked) {
-            selected.push(item.name);
-          }
-        });
+          resolve({
+            file: file.name,
+            items: selected,
+            count: selected.length,
+          });
+        } catch (err) {
+          console.log(err);
 
-        resolve({
-          file: file.name,
-          items: selected,
-          count: selected.length,
-        });
+          resolve({
+            file: file.name,
+            items: [],
+            count: 0,
+          });
+        }
       };
 
-      img.src = URL.createObjectURL(file);
+      img.src =
+        URL.createObjectURL(file);
     });
   };
-
-  const totalOrders = results.length;
-
-  const totalItems = Object.values(
-    totals
-  ).reduce((a, b) => a + b, 0);
 
   return (
     <main
@@ -252,8 +428,8 @@ export default function Home() {
     >
       <h1
         style={{
-          fontSize: 52,
-          marginBottom: 10,
+          fontSize: 48,
+          marginBottom: 20,
         }}
       >
         Brunch Scanner
@@ -262,37 +438,18 @@ export default function Home() {
       <div
         style={{
           border:
-            "6px solid #00ff88",
+            "5px solid #00ff88",
           borderRadius: 30,
           padding: 25,
           marginBottom: 30,
         }}
       >
-        <h2>Guide</h2>
+        <h2>Upload billeder</h2>
 
-        <ul
-          style={{
-            lineHeight: 1.8,
-          }}
-        >
-          <li>
-            Hold menuen lodret
-          </li>
-
-          <li>
-            Fyld næsten hele billedet
-          </li>
-
-          <li>
-            God belysning giver bedst
-            resultat
-          </li>
-
-          <li>
-            Du kan vælge mange billeder
-            på én gang
-          </li>
-        </ul>
+        <p>
+          Upload flere brunchkort på én
+          gang
+        </p>
 
         <input
           type="file"
@@ -322,8 +479,8 @@ export default function Home() {
         style={{
           width: "100%",
           borderRadius: 24,
-          background: "#111",
           marginBottom: 40,
+          background: "#111",
         }}
       />
 
@@ -331,42 +488,24 @@ export default function Home() {
         <div
           style={{
             background: "#111",
-            padding: 25,
             borderRadius: 24,
+            padding: 25,
             marginBottom: 40,
           }}
         >
           <h2
             style={{
-              fontSize: 38,
+              fontSize: 36,
             }}
           >
-            Samlet opsummering
+            Samlet optælling
           </h2>
 
           <div
             style={{
-              marginTop: 20,
-              display: "grid",
-              gap: 14,
-            }}
-          >
-            <div>
-              📄 Sedler scannet:{" "}
-              {totalOrders}
-            </div>
-
-            <div>
-              🍽️ Totale elementer:{" "}
-              {totalItems}
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 30,
               display: "grid",
               gap: 12,
+              marginTop: 20,
             }}
           >
             {Object.entries(totals)
@@ -375,7 +514,8 @@ export default function Home() {
                 <div
                   key={item}
                   style={{
-                    background: "#1d1d1d",
+                    background:
+                      "#1f1f1f",
                     padding: 14,
                     borderRadius: 14,
                     display: "flex",
@@ -393,7 +533,7 @@ export default function Home() {
         </div>
       )}
 
-      {results.map((result, i) => (
+      {results.map((r, i) => (
         <div
           key={i}
           style={{
@@ -403,11 +543,10 @@ export default function Home() {
             marginBottom: 24,
           }}
         >
-          <h2>{result.file}</h2>
+          <h2>{r.file}</h2>
 
           <h3>
-            Fundet {result.count}{" "}
-            elementer
+            Fundet {r.count} elementer
           </h3>
 
           <div
@@ -417,14 +556,14 @@ export default function Home() {
               marginTop: 20,
             }}
           >
-            {result.items.map((item) => (
+            {r.items.map((item) => (
               <div
                 key={item}
                 style={{
-                  background: "#1f1f1f",
+                  background:
+                    "#1f1f1f",
                   padding: 14,
                   borderRadius: 14,
-                  fontSize: 20,
                 }}
               >
                 ✅ {item}
@@ -433,6 +572,11 @@ export default function Home() {
           </div>
         </div>
       ))}
+
+      <script
+        async
+        src="https://docs.opencv.org/4.x/opencv.js"
+      />
     </main>
   );
 }
