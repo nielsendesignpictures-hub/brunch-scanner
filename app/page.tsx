@@ -81,10 +81,10 @@ export default function Home() {
 
           if (!ctx) return;
 
-          canvas.width = img.width;
-          canvas.height = img.height;
+canvas.width = 1000;
+canvas.height = 1800;
 
-          ctx.drawImage(img, 0, 0);
+ctx.drawImage(img, 0, 0, 1000, 1800);
 
           const cv = window.cv;
 
@@ -118,38 +118,48 @@ export default function Home() {
             cv.CHAIN_APPROX_SIMPLE
           );
 
-          let biggest = null;
-          let maxArea = 0;
+let biggest = null;
+let maxArea = 0;
 
-          for (let i = 0; i < contours.size(); i++) {
-            let cnt = contours.get(i);
+for (let i = 0; i < contours.size(); i++) {
+  const cnt = contours.get(i);
 
-            let area = cv.contourArea(cnt);
+  const area = cv.contourArea(cnt);
 
-            if (area > maxArea) {
-              let peri = cv.arcLength(cnt, true);
+  // ignorer små ting
+  if (area < 50000) continue;
 
-              let approx = new cv.Mat();
+  const peri = cv.arcLength(cnt, true);
 
-              cv.approxPolyDP(
-                cnt,
-                approx,
-                0.02 * peri,
-                true
-              );
+  const approx = new cv.Mat();
 
-              if (approx.rows === 4) {
-                biggest = approx;
-                maxArea = area;
-              }
-            }
-          }
+  cv.approxPolyDP(
+    cnt,
+    approx,
+    0.02 * peri,
+    true
+  );
+
+  // vi vil kun have 4 hjørner
+  if (approx.rows === 4) {
+    if (area > maxArea) {
+      biggest = approx;
+      maxArea = area;
+    }
+  }
+}
 
           if (!biggest) {
             resolve();
             return;
           }
+if (!biggest) {
+  // hvis ingen polygon findes
+  // brug originalt billede
 
+  ctx.drawImage(img, 0, 0, 1000, 1800);
+} else { cv.imshow(canvas, dst);
+          
           // warp perspective
           const dstWidth = 1000;
           const dstHeight = 1800;
