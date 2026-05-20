@@ -2,42 +2,40 @@
 
 import { useRef, useState } from "react";
 
-declare global {
-  interface Window {
-    cv: any;
-  }
-}
-
 type ScanResult = {
   file: string;
   items: string[];
   count: number;
 };
 
-const MENU_NAMES = [
-  "Røræg",
-  "Spejlæg",
-  "Modnet Havarti ost",
-  "Hjemmelavet blåbæryoghurt",
-  "Hjemmelavet chiagrød",
+type TotalMap = {
+  [key: string]: number;
+};
 
-  "Avocado og hytteost",
-  "Eksotisk frugtskål",
-  "Smashed peas med forårsmynte",
+const CHECKBOXES = [
+  { name: "Røræg", x: 60, y: 385 },
+  { name: "Spejlæg", x: 60, y: 485 },
+  { name: "Modnet Havarti ost", x: 60, y: 590 },
+  { name: "Hjemmelavet blåbæryoghurt", x: 60, y: 700 },
+  { name: "Hjemmelavet chiagrød", x: 60, y: 820 },
 
-  "Pain au chocolat fra Meyers",
-  "Øko. smørcroissant fra Meyers",
-  "Mariagertoba-toast",
+  { name: "Avocado og hytteost", x: 60, y: 1090 },
+  { name: "Eksotisk frugtskål", x: 60, y: 1190 },
+  { name: "Smashed peas med forårsmynte", x: 60, y: 1290 },
 
-  "Rösti",
-  "Hjemmelavet hønsesalat",
-  "Crispy chicken",
-  "2 brunchpølser",
-  "Koldrøget laks",
+  { name: "Pain au chocolat fra Meyers", x: 60, y: 1640 },
+  { name: "Øko. smørcroissant fra Meyers", x: 60, y: 1740 },
+  { name: "Mariagertoba-toast", x: 60, y: 1840 },
 
-  "Lun rabarber crumble",
-  "Øllebrød med let vaniljeskum",
-  "2 amerikanske pandekager",
+  { name: "Rösti", x: 540, y: 390 },
+  { name: "Hjemmelavet hønsesalat", x: 540, y: 510 },
+  { name: "Crispy chicken", x: 540, y: 640 },
+  { name: "2 brunchpølser", x: 540, y: 780 },
+  { name: "Koldrøget laks", x: 540, y: 930 },
+
+  { name: "Lun rabarber crumble", x: 540, y: 1250 },
+  { name: "Øllebrød med let vaniljeskum", x: 540, y: 1390 },
+  { name: "2 amerikanske pandekager", x: 540, y: 1530 },
 ];
 
 export default function Home() {
@@ -47,9 +45,8 @@ export default function Home() {
     ScanResult[]
   >([]);
 
-  const [totals, setTotals] = useState<{
-    [key: string]: number;
-  }>({});
+  const [totals, setTotals] =
+    useState<TotalMap>({});
 
   const [loading, setLoading] =
     useState(false);
@@ -66,10 +63,7 @@ export default function Home() {
     setLoading(true);
 
     const allResults: ScanResult[] = [];
-
-    const totalMap: {
-      [key: string]: number;
-    } = {};
+    const totalMap: TotalMap = {};
 
     for (const file of files) {
       const result = await scanImage(file);
@@ -91,8 +85,14 @@ export default function Home() {
   const scanImage = async (
     file: File
   ): Promise<ScanResult> => {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       const img = new Image();
+
+      const template = new Image();
+
+      template.src = "/template.jpg";
+
+      await template.decode();
 
       img.onload = () => {
         const canvas = canvasRef.current;
@@ -120,294 +120,164 @@ export default function Home() {
           return;
         }
 
-        const WIDTH = 1200;
-        const HEIGHT = 2200;
+        const WIDTH = 1000;
+        const HEIGHT = 2000;
 
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
 
-        ctx.fillStyle = "black";
-        ctx.fillRect(
+        // DRAW USER IMAGE
+        ctx.drawImage(
+          img,
           0,
           0,
           WIDTH,
           HEIGHT
         );
 
-        // normalize image
-        const ratio =
-          img.width / img.height;
+        const userData =
+          ctx.getImageData(
+            0,
+            0,
+            WIDTH,
+            HEIGHT
+          );
 
-        let drawWidth = WIDTH;
-        let drawHeight =
-          WIDTH / ratio;
-
-        if (drawHeight < HEIGHT) {
-          drawHeight = HEIGHT;
-          drawWidth = HEIGHT * ratio;
-        }
-
-        const offsetX =
-          (WIDTH - drawWidth) / 2;
-
-        const offsetY =
-          (HEIGHT - drawHeight) / 2;
-
-        ctx.drawImage(
-          img,
-          offsetX,
-          offsetY,
-          drawWidth,
-          drawHeight
+        // DRAW TEMPLATE
+        ctx.clearRect(
+          0,
+          0,
+          WIDTH,
+          HEIGHT
         );
 
-        try {
-          const cv = window.cv;
+        ctx.drawImage(
+          template,
+          0,
+          0,
+          WIDTH,
+          HEIGHT
+        );
 
-          if (!cv) {
-            resolve({
-              file: file.name,
-              items: [],
-              count: 0,
-            });
-
-            return;
-          }
-
-          const src = cv.imread(canvas);
-
-          const gray = new cv.Mat();
-
-          cv.cvtColor(
-            src,
-            gray,
-            cv.COLOR_RGBA2GRAY
+        const templateData =
+          ctx.getImageData(
+            0,
+            0,
+            WIDTH,
+            HEIGHT
           );
 
-          const thresh =
-            new cv.Mat();
+        // DRAW USER AGAIN
+        ctx.clearRect(
+          0,
+          0,
+          WIDTH,
+          HEIGHT
+        );
 
-          cv.adaptiveThreshold(
-            gray,
-            thresh,
-            255,
-            cv.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv.THRESH_BINARY_INV,
-            11,
-            2
+        ctx.putImageData(userData, 0, 0);
+
+        const selected: string[] = [];
+
+        CHECKBOXES.forEach((box) => {
+          const size = 34;
+
+          const userBox =
+            ctx.getImageData(
+              box.x,
+              box.y,
+              size,
+              size
+            );
+
+          // TEMPLATE BOX
+          const templateCanvas =
+            document.createElement(
+              "canvas"
+            );
+
+          templateCanvas.width = WIDTH;
+          templateCanvas.height =
+            HEIGHT;
+
+          const tctx =
+            templateCanvas.getContext(
+              "2d"
+            );
+
+          if (!tctx) return;
+
+          tctx.drawImage(
+            template,
+            0,
+            0,
+            WIDTH,
+            HEIGHT
           );
 
-          const contours =
-            new cv.MatVector();
+          const templateBox =
+            tctx.getImageData(
+              box.x,
+              box.y,
+              size,
+              size
+            );
 
-          const hierarchy =
-            new cv.Mat();
-
-          cv.findContours(
-            thresh,
-            contours,
-            hierarchy,
-            cv.RETR_TREE,
-            cv.CHAIN_APPROX_SIMPLE
-          );
-
-          const boxes: {
-            x: number;
-            y: number;
-            w: number;
-            h: number;
-          }[] = [];
+          let difference = 0;
 
           for (
             let i = 0;
-            i < contours.size();
-            i++
+            i < userBox.data.length;
+            i += 4
           ) {
-            const cnt =
-              contours.get(i);
+            const ur =
+              userBox.data[i];
+            const ug =
+              userBox.data[i + 1];
+            const ub =
+              userBox.data[i + 2];
 
-            const rect =
-              cv.boundingRect(cnt);
+            const tr =
+              templateBox.data[i];
+            const tg =
+              templateBox.data[i + 1];
+            const tb =
+              templateBox.data[i + 2];
 
-            const ratio =
-              rect.w / rect.h;
+            const diff =
+              Math.abs(ur - tr) +
+              Math.abs(ug - tg) +
+              Math.abs(ub - tb);
 
-            const area =
-              rect.w * rect.h;
-
-            // checkbox filter
-            const isSquare =
-              ratio > 0.8 &&
-              ratio < 1.2;
-
-            const validSize =
-              area > 300 &&
-              area < 2500;
-
-            if (
-              isSquare &&
-              validSize
-            ) {
-              boxes.push(rect);
-            }
+            difference += diff;
           }
 
-          // remove duplicates
-          const filtered =
-            boxes.filter(
-              (box, index, self) => {
-                return (
-                  index ===
-                  self.findIndex(
-                    (b) =>
-                      Math.abs(
-                        b.x - box.x
-                      ) < 10 &&
-                      Math.abs(
-                        b.y - box.y
-                      ) < 10
-                  )
-                );
-              }
-            );
+          const checked =
+            difference > 50000;
 
-          // sort top->bottom
-          filtered.sort((a, b) => {
-            if (
-              Math.abs(a.y - b.y) <
-              40
-            ) {
-              return a.x - b.x;
-            }
+          ctx.strokeStyle = checked
+            ? "#00ff00"
+            : "#ff0000";
 
-            return a.y - b.y;
-          });
+          ctx.lineWidth = checked ? 5 : 2;
 
-          // keep likely menu checkboxes
-          const finalBoxes =
-            filtered.slice(0, 25);
-
-          const selected: string[] = [];
-
-          finalBoxes.forEach(
-            (box, index) => {
-              const inner =
-                ctx.getImageData(
-                  box.x + 5,
-                  box.y + 5,
-                  box.w - 10,
-                  box.h - 10
-                );
-
-              let dark = 0;
-              let diagonal = 0;
-
-              const size =
-                box.w - 10;
-
-              for (
-                let y = 0;
-                y < size;
-                y++
-              ) {
-                for (
-                  let x = 0;
-                  x < size;
-                  x++
-                ) {
-                  const i =
-                    (y * size + x) *
-                    4;
-
-                  const r =
-                    inner.data[i];
-
-                  const g =
-                    inner.data[i + 1];
-
-                  const b =
-                    inner.data[i + 2];
-
-                  const brightness =
-                    (r + g + b) /
-                    3;
-
-                  const isBlue =
-                    b > r + 20 &&
-                    b > g + 20 &&
-                    b > 70;
-
-                  const isDark =
-                    brightness < 90;
-
-                  if (
-                    isBlue ||
-                    isDark
-                  ) {
-                    dark++;
-
-                    const d1 =
-                      Math.abs(
-                        x - y
-                      ) < 4;
-
-                    const d2 =
-                      Math.abs(
-                        x -
-                          (size - y)
-                      ) < 4;
-
-                    if (d1 || d2) {
-                      diagonal++;
-                    }
-                  }
-                }
-              }
-
-              const checked =
-                dark > 40 &&
-                diagonal > 8;
-
-              ctx.strokeStyle =
-                checked
-                  ? "#00ff00"
-                  : "#ff0000";
-
-              ctx.lineWidth =
-                checked ? 5 : 2;
-
-              ctx.strokeRect(
-                box.x,
-                box.y,
-                box.w,
-                box.h
-              );
-
-              if (
-                checked &&
-                MENU_NAMES[index]
-              ) {
-                selected.push(
-                  MENU_NAMES[index]
-                );
-              }
-            }
+          ctx.strokeRect(
+            box.x,
+            box.y,
+            size,
+            size
           );
 
-          resolve({
-            file: file.name,
-            items: selected,
-            count: selected.length,
-          });
-        } catch (err) {
-          console.log(err);
+          if (checked) {
+            selected.push(box.name);
+          }
+        });
 
-          resolve({
-            file: file.name,
-            items: [],
-            count: 0,
-          });
-        }
+        resolve({
+          file: file.name,
+          items: selected,
+          count: selected.length,
+        });
       };
 
       img.src =
@@ -439,16 +309,16 @@ export default function Home() {
         style={{
           border:
             "5px solid #00ff88",
-          borderRadius: 30,
-          padding: 25,
+          borderRadius: 24,
+          padding: 24,
           marginBottom: 30,
         }}
       >
-        <h2>Upload billeder</h2>
+        <h2>Upload brunch billeder</h2>
 
         <p>
-          Upload flere brunchkort på én
-          gang
+          Brug samme afstand og framing
+          hver gang
         </p>
 
         <input
@@ -478,9 +348,9 @@ export default function Home() {
         ref={canvasRef}
         style={{
           width: "100%",
-          borderRadius: 24,
-          marginBottom: 40,
+          borderRadius: 20,
           background: "#111",
+          marginBottom: 40,
         }}
       />
 
@@ -489,7 +359,7 @@ export default function Home() {
           style={{
             background: "#111",
             borderRadius: 24,
-            padding: 25,
+            padding: 24,
             marginBottom: 40,
           }}
         >
@@ -503,9 +373,9 @@ export default function Home() {
 
           <div
             style={{
+              marginTop: 20,
               display: "grid",
               gap: 12,
-              marginTop: 20,
             }}
           >
             {Object.entries(totals)
@@ -521,7 +391,6 @@ export default function Home() {
                     display: "flex",
                     justifyContent:
                       "space-between",
-                    fontSize: 20,
                   }}
                 >
                   <span>{item}</span>
@@ -533,7 +402,7 @@ export default function Home() {
         </div>
       )}
 
-      {results.map((r, i) => (
+      {results.map((result, i) => (
         <div
           key={i}
           style={{
@@ -543,10 +412,11 @@ export default function Home() {
             marginBottom: 24,
           }}
         >
-          <h2>{r.file}</h2>
+          <h2>{result.file}</h2>
 
           <h3>
-            Fundet {r.count} elementer
+            Fundet {result.count}{" "}
+            elementer
           </h3>
 
           <div
@@ -556,7 +426,7 @@ export default function Home() {
               marginTop: 20,
             }}
           >
-            {r.items.map((item) => (
+            {result.items.map((item) => (
               <div
                 key={item}
                 style={{
@@ -572,11 +442,6 @@ export default function Home() {
           </div>
         </div>
       ))}
-
-      <script
-        async
-        src="https://docs.opencv.org/4.x/opencv.js"
-      />
     </main>
   );
 }
