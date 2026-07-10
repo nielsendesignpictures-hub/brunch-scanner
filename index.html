@@ -51,6 +51,11 @@
     font-size: 14px; font-weight: 700;
   }
   #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  #photoBtn {
+    position: absolute; top: 12px; left: 12px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: rgba(43,36,33,.85); color: var(--beige);
+    font-size: 20px; cursor: pointer; z-index: 6;
+  }
   #camFallback {
     position: absolute; inset: 0; display: none; flex-direction: column; gap: 14px;
     align-items: center; justify-content: center; padding: 30px; text-align: center;
@@ -162,6 +167,7 @@
       <canvas id="overlay"></canvas>
       <div id="flash"></div>
       <div id="scanChip">0 sedler</div>
+      <button id="photoBtn" title="Tag foto med kamera-appen" onclick="document.getElementById('fileInput').click()">📷</button>
       <div id="status">Starter kamera …</div>
       <div id="camFallback">
         <div>Kameraet kunne ikke startes.<br>Du kan stadig tage et billede manuelt:</div>
@@ -197,6 +203,7 @@
 
 <div id="toast"></div>
 
+<script src="jsqr.js"></script>
 <script src="vision.js"></script>
 <script>
 'use strict';
@@ -278,6 +285,10 @@ var lastQuad = null;
 var stableCount = 0;
 var mustClear = false;       // kortet skal ud af billedet før næste scanning
 var clearFrames = 0;
+var lastQR = null;           // QR-baseret detektion (lyse borde)
+var qrStable = 0;
+var qrTickCounter = 0;
+var qrCanvas = document.createElement('canvas');
 
 var detCanvas = document.createElement('canvas');
 var fullCanvas = document.createElement('canvas');
@@ -296,6 +307,14 @@ async function startCamera() {
     });
     video.srcObject = stream;
     await video.play();
+    // Ældre iPhones: prøv at zoome ud, så hele den aflange seddel kan være i billedet
+    try {
+      var track = stream.getVideoTracks()[0];
+      var caps = track.getCapabilities ? track.getCapabilities() : null;
+      if (caps && caps.zoom && caps.zoom.min < 1) {
+        await track.applyConstraints({ advanced: [{ zoom: Math.max(caps.zoom.min, 0.5) }] });
+      }
+    } catch (e) { /* zoom ikke understøttet – ok */ }
     setStatus('Hold en seddel foran kameraet');
     requestAnimationFrame(tick);
   } catch (e) {
@@ -332,7 +351,37 @@ function tick() {
     return;
   }
 
-  if (!quad) { stableCount = 0; lastQuad = null; setStatus('Hold en seddel foran kameraet'); return; }
+  if (!quad) {
+    stableCount = 0; lastQuad = null;
+    // lyse borde: papirkanten kan ikke ses – brug QR-koden som detektor
+    qrTickCounter++;
+    if (qrTickCounter >= 2 && typeof jsQR !== 'undefined') {
+      qrTickCounter = 0;
+      var qw = 800, qh = Math.round(qw * video.videoHeight / video.videoWidth);
+      if (video.videoWidth < video.videoHeight) { qw = Math.round(800 * video.videoWidth / video.videoHeight); qh = 800; }
+      qrCanvas.width = qw; qrCanvas.height = qh;
+      var qctx = qrCanvas.getContext('2d', { willReadFrequently: true });
+      qctx.drawImage(video, 0, 0, qw, qh);
+      var qimg = qctx.getImageData(0, 0, qw, qh);
+      var qres = null;
+      try { qres = jsQR(qimg.data, qw, qh); } catch (e) { qres = null; }
+      if (qres && qres.location) {
+        var c = qres.location.topLeftCorner;
+        if (lastQR && Math.abs(c.x - lastQR.x) < qw * 0.02 && Math.abs(c.y - lastQR.y) < qw * 0.02) qrStable++;
+        else qrStable = 0;
+        lastQR = { x: c.x, y: c.y };
+        setStatus('Seddel fundet (QR) – hold den i ro …');
+        if (qrStable >= 1) {
+          qrStable = 0; lastQR = null;
+          captureAndRead();
+        }
+        return;
+      }
+      lastQR = null; qrStable = 0;
+    }
+    setStatus('Hold en seddel foran kameraet');
+    return;
+  }
 
   // stabilitet: hjørnerne må højst flytte sig lidt mellem frames
   if (lastQuad && quadStable(quad, lastQuad, dw)) stableCount++;
@@ -392,12 +441,12 @@ function captureAndRead() {
 
 function processFrame(rgba, w, h) {
   var res;
-  try { res = KV.readSheet(rgba, w, h, state.settings.sensitivity); }
+  try { res = KV.readSheet(rgba, w, h, state.settings.sensitivity, typeof jsQR !== 'undefined' ? jsQR : null); }
   catch (e) { res = { ok: false, error: 'Uventet fejl: ' + e.message }; }
   busy = false;
   if (!res.ok) {
     beep(220, 0.25);
-    setStatus('⚠️ ' + res.error + ' – prøv igen', false);
+    setStatus('⚠️ ' + res.error, false);
     mustClear = false;
     return;
   }
@@ -431,9 +480,11 @@ var currentItems = [];
 function openReview(res) {
   reviewOpen = true;
   currentItems = res.items.map(function (it) {
-    return { id: it.id, checked: it.checked, extra: it.extra, cat: it.cat };
+    return { id: it.id, checked: it.checked, extra: it.extra, cat: it.cat, uncertain: !!it.uncertain };
   });
-  document.getElementById('reviewMeta').textContent = res.bordersFound + '/21 felter fundet';
+  var meta = res.bordersFound + '/21 felter fundet';
+  if (res.confident === false) meta = '⚠️ usikker aflæsning – tjek grundigt';
+  document.getElementById('reviewMeta').textContent = meta;
   renderReview();
   document.getElementById('review').classList.add('open');
 }
@@ -452,7 +503,8 @@ function renderReview() {
     }
     var row = document.createElement('div');
     row.className = 'ritem' + (it.checked ? ' on' : '');
-    row.innerHTML = '<div class="box">' + (it.checked ? '✓' : '') + '</div><div>' + itemName(it.id) + '</div>';
+    row.innerHTML = '<div class="box">' + (it.checked ? '✓' : '') + '</div><div>' + itemName(it.id) +
+      (it.uncertain ? ' <span style="opacity:.7">⚠️</span>' : '') + '</div>';
     row.addEventListener('click', function () {
       currentItems[idx].checked = !currentItems[idx].checked;
       renderReview();
