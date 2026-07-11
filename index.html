@@ -156,7 +156,7 @@
 <body>
 <header>
   <h1>CAFÉ KAISERS</h1>
-  <div class="sub">Brunch-scanner · Byg-selv-brunch</div>
+  <div class="sub">Brunch-scanner · Byg-selv-brunch <span style="opacity:.45">· v2.1</span></div>
 </header>
 
 <main>
@@ -630,7 +630,7 @@ function renderSettings() {
     html += '<input type="text" data-name="' + b.id + '" value="' + itemName(b.id).replace(/"/g, '&quot;') + '" style="margin-bottom:6px">';
   });
   html += '</div>';
-  html += '<div class="setrow"><div class="small">Kaiser Brunch-scanner v1.0 · Data gemmes kun på denne telefon.</div></div>';
+  html += '<div class="setrow"><div class="small">Kaiser Brunch-scanner <b>v2.1</b> (juli 2026) · Data gemmes kun på denne telefon.</div></div>';
   v.innerHTML = html;
 
   document.getElementById('setLoc').addEventListener('change', function (e) {
