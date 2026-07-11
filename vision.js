@@ -174,10 +174,40 @@
     var sides = [d(quad[0], quad[1]), d(quad[1], quad[2]), d(quad[2], quad[3]), d(quad[3], quad[0])];
     var s02 = (sides[0] + sides[2]) / 2, s13 = (sides[1] + sides[3]) / 2;
     var ratio = Math.min(s02, s13) / Math.max(s02, s13);
-    if (ratio < 0.18 || ratio > 0.6) return null;
+    if (ratio < 0.2 || ratio > 0.55) return null;
     var qa = polyArea(quad);
     var fit = qa / best.size;              // hvor firkantet komponenten er
     if (fit < 0.7 || fit > 1.45) return null;
+
+    // INDHOLDS-TJEK: en ægte seddel har trykt tekst indeni – lyse striber i
+    // borde/marmor har ikke. Mål andelen af mørke pixels inde i firkanten.
+    var minX = CARD_W, maxX = 0, minY = CARD_H, maxY = 0, qi;
+    for (qi = 0; qi < 4; qi++) {
+      minX = Math.min(minX, quad[qi][0]); maxX = Math.max(maxX, quad[qi][0]);
+      minY = Math.min(minY, quad[qi][1]); maxY = Math.max(maxY, quad[qi][1]);
+    }
+    function inQuad(px, py) {
+      var sign = 0;
+      for (var e = 0; e < 4; e++) {
+        var a1 = quad[e], b1 = quad[(e + 1) % 4];
+        var cr = (b1[0] - a1[0]) * (py - a1[1]) - (b1[1] - a1[1]) * (px - a1[0]);
+        var sg = cr > 0 ? 1 : -1;
+        if (sign === 0) sign = sg;
+        else if (sg !== sign) return false;
+      }
+      return true;
+    }
+    var darkT = t * 0.7;
+    var darkC = 0, totC = 0;
+    for (var sy2 = Math.max(0, minY | 0); sy2 <= Math.min(h - 1, maxY | 0); sy2 += 3) {
+      for (var sx2 = Math.max(0, minX | 0); sx2 <= Math.min(w - 1, maxX | 0); sx2 += 3) {
+        if (!inQuad(sx2, sy2)) continue;
+        totC++;
+        if (gray[sy2 * w + sx2] < darkT) darkC++;
+      }
+    }
+    var darkFrac = totC ? darkC / totC : 0;
+    if (darkFrac < 0.03 || darkFrac > 0.35) return null;
 
     // kvalitet: firkantethed + hvor tæt sideforholdet er på kortets (0.354)
     var quality = -Math.abs(1 - fit) - Math.abs(ratio - 0.354);
