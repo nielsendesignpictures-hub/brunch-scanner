@@ -1,7 +1,7 @@
 /* Service worker: offline-understøttelse + automatisk opdatering.
    Strategi: netværk først (så nye versioner hentes, når der er net),
    cache som fallback (så appen virker offline). */
-var CACHE = 'kaiser-scanner-v4';
+var CACHE = 'kaiser-scanner-v5';
 var FILES = [
   './',
   './index.html',
@@ -41,3 +41,4 @@ self.addEventListener('fetch', function (e) {
     })
   );
 });
+
