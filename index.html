@@ -51,6 +51,20 @@
     font-size: 14px; font-weight: 700;
   }
   #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  #guide { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+  #guideBox {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    height: 86%; aspect-ratio: 708 / 2000;
+    border: 3px dashed rgba(255,255,255,.85); border-radius: 6px;
+    box-shadow: 0 0 0 3000px rgba(0,0,0,.28);
+  }
+  #guideBox.locked { border-color: #46c07a; border-style: solid; }
+  #shutterBtn {
+    position: absolute; left: 50%; bottom: 68px; transform: translateX(-50%);
+    padding: 14px 30px; border-radius: 30px; border: 3px solid rgba(255,255,255,.9);
+    background: rgba(46,125,79,.92); color: #fff; font-size: 16px; font-weight: 800;
+    font-family: inherit; letter-spacing: 1px; z-index: 6; cursor: pointer;
+  }
   #photoBtn {
     position: absolute; top: 12px; left: 12px; width: 44px; height: 44px;
     border-radius: 50%; border: none; background: rgba(43,36,33,.85); color: var(--beige);
@@ -156,7 +170,7 @@
 <body>
 <header>
   <h1>CAFÉ KAISERS</h1>
-  <div class="sub">Brunch-scanner · Byg-selv-brunch <span style="opacity:.45">· v2.1</span></div>
+  <div class="sub">Brunch-scanner · Byg-selv-brunch <span style="opacity:.45">· v3.0</span></div>
 </header>
 
 <main>
@@ -168,6 +182,8 @@
       <div id="flash"></div>
       <div id="scanChip">0 sedler</div>
       <button id="photoBtn" title="Tag foto med kamera-appen" onclick="document.getElementById('fileInput').click()">📷</button>
+      <div id="guide"><div id="guideBox"></div></div>
+      <button id="shutterBtn" title="Scan nu">SCAN NU</button>
       <div id="status">Starter kamera …</div>
       <div id="camFallback">
         <div>Kameraet kunne ikke startes.<br>Du kan stadig tage et billede manuelt:</div>
@@ -345,11 +361,8 @@ function tick() {
 
   drawOverlay(quad, dw, dh);
 
-  if (mustClear) {
-    if (!quad) { clearFrames++; if (clearFrames >= 2) { mustClear = false; setStatus('Klar til næste seddel'); } }
-    else { clearFrames = 0; setStatus('Fjern sedlen – klar om et øjeblik'); }
-    return;
-  }
+  if (mustClear) { mustClear = false; }
+  if (!quad) document.getElementById('guideBox').classList.remove('locked');
 
   if (!quad) {
     stableCount = 0; lastQuad = null;
@@ -370,16 +383,13 @@ function tick() {
         if (lastQR && Math.abs(c.x - lastQR.x) < qw * 0.02 && Math.abs(c.y - lastQR.y) < qw * 0.02) qrStable++;
         else qrStable = 0;
         lastQR = { x: c.x, y: c.y };
-        setStatus('Seddel fundet (QR) – hold den i ro …');
-        if (qrStable >= 1) {
-          qrStable = 0; lastQR = null;
-          captureAndRead();
-        }
+        document.getElementById('guideBox').classList.add('locked');
+        setStatus('Seddel fundet ✓ – tryk SCAN NU');
         return;
       }
       lastQR = null; qrStable = 0;
     }
-    setStatus('Hold en seddel foran kameraet');
+    setStatus('Læg sedlen ind i rammen og tryk SCAN NU');
     return;
   }
 
@@ -388,11 +398,9 @@ function tick() {
   else stableCount = 0;
   lastQuad = quad;
 
-  if (stableCount === 0) setStatus('Seddel fundet – hold den i ro …');
-  if (stableCount >= 2) {
-    stableCount = 0;
-    captureAndRead();
-  }
+  // sedlen er fundet – marker rammen grøn, men vent på tjenerens tryk
+  document.getElementById('guideBox').classList.add('locked');
+  setStatus('Seddel fundet ✓ – tryk SCAN NU');
 }
 
 function quadStable(a, b, w) {
@@ -420,25 +428,83 @@ function drawOverlay(quad, dw, dh) {
   ctx.closePath(); ctx.stroke();
 }
 
+/* Tager 3 billeder med korte mellemrum og læser dem hver for sig.
+   Kun felter hvor mindst 2 af 3 er enige godtages – tilfældige fejl
+   (skygge, blur, en enkelt skæv frame) forsvinder. */
 function captureAndRead() {
   busy = true;
-  setStatus('Læser sedlen …', true);
-  document.getElementById('flash').style.opacity = '0.55';
-  setTimeout(function () { document.getElementById('flash').style.opacity = '0'; }, 180);
+  var SHOTS = 3;
+  var reads = [];
+  var shot = 0;
 
-  setTimeout(function () {   // lad UI'et opdatere først
+  function grabOne() {
+    shot++;
+    setStatus('Læser sedlen … (' + shot + '/' + SHOTS + ')', true);
+    var el = document.getElementById('flash');
+    el.style.opacity = '0.45';
+    setTimeout(function () { el.style.opacity = '0'; }, 120);
+
     var vw = video.videoWidth, vh = video.videoHeight;
-    // skaler ned til max 2200 px på den lange led – rigeligt til aflæsning
     var f = Math.min(1, 2200 / Math.max(vw, vh));
     var cw = Math.round(vw * f), ch = Math.round(vh * f);
     fullCanvas.width = cw; fullCanvas.height = ch;
     var ctx = fullCanvas.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(video, 0, 0, cw, ch);
     var img = ctx.getImageData(0, 0, cw, ch);
-    processFrame(img.data, cw, ch);
-  }, 30);
+
+    var res;
+    try { res = KV.readSheet(img.data, cw, ch, state.settings.sensitivity, typeof jsQR !== 'undefined' ? jsQR : null); }
+    catch (e) { res = { ok: false, error: 'Uventet fejl: ' + e.message }; }
+    if (res.ok) reads.push(res);
+
+    if (shot < SHOTS) {
+      setTimeout(grabOne, 220);
+    } else {
+      finishReads(reads);
+    }
+  }
+  setTimeout(grabOne, 30);
 }
 
+function finishReads(reads) {
+  busy = false;
+  if (reads.length === 0) {
+    beep(220, 0.25);
+    setStatus('⚠️ Kunne ikke aflæse sedlen – hold den inde i rammen og prøv igen', false);
+    mustClear = false;
+    return;
+  }
+  // stem om hvert felt
+  var base = reads[0];
+  var items = base.items.map(function (it, idx) {
+    var yes = 0, unc = 0;
+    for (var r = 0; r < reads.length; r++) {
+      var o = reads[r].items[idx];
+      if (!o) continue;
+      if (o.checked) yes++;
+      if (o.uncertain) unc++;
+    }
+    var majority = yes * 2 > reads.length;         // over halvdelen
+    var split = yes > 0 && yes < reads.length;     // uenighed mellem billeder
+    return {
+      id: it.id, name: it.name, cat: it.cat, extra: it.extra,
+      checked: majority,
+      uncertain: split || unc > reads.length / 2
+    };
+  });
+  var allConfident = reads.every(function (r) { return r.confident; });
+  var disagreements = items.filter(function (i) { return i.uncertain; }).length;
+
+  beep(990, 0.12);
+  openReview({
+    items: items,
+    bordersFound: base.bordersFound,
+    confident: allConfident && disagreements === 0,
+    shots: reads.length
+  });
+}
+
+/* enkelt-billede (bruges af foto-fallback) */
 function processFrame(rgba, w, h) {
   var res;
   try { res = KV.readSheet(rgba, w, h, state.settings.sensitivity, typeof jsQR !== 'undefined' ? jsQR : null); }
@@ -453,6 +519,13 @@ function processFrame(rgba, w, h) {
   beep(990, 0.12);
   openReview(res);
 }
+
+/* manuel udløser: tjeneren bestemmer selv, hvornår der scannes */
+document.getElementById('shutterBtn').addEventListener('click', function () {
+  if (busy || reviewOpen) return;
+  mustClear = false; stableCount = 0; qrStable = 0;
+  captureAndRead();
+});
 
 /* foto-fallback (filinput) */
 document.getElementById('fileInput').addEventListener('change', function (ev) {
@@ -482,8 +555,8 @@ function openReview(res) {
   currentItems = res.items.map(function (it) {
     return { id: it.id, checked: it.checked, extra: it.extra, cat: it.cat, uncertain: !!it.uncertain };
   });
-  var meta = res.bordersFound + '/21 felter fundet';
-  if (res.confident === false) meta = '⚠️ usikker aflæsning – tjek grundigt';
+  var meta = (res.shots ? res.shots + ' billeder · ' : '') + res.bordersFound + '/21 felter';
+  if (res.confident === false) meta = '⚠️ usikker – tjek de markerede felter';
   document.getElementById('reviewMeta').textContent = meta;
   renderReview();
   document.getElementById('review').classList.add('open');
@@ -519,13 +592,11 @@ document.getElementById('btnAccept').addEventListener('click', function () {
   save(); updateChip();
   closeReview();
   toast('Seddel #' + day().log.length + ' gemt ✓');
-  mustClear = true; clearFrames = 0;
-  setStatus('Gemt! Fjern sedlen og tag den næste');
+  setStatus('Gemt ✓ – læg næste seddel i rammen');
 });
 document.getElementById('btnDiscard').addEventListener('click', function () {
   closeReview();
-  mustClear = true; clearFrames = 0;
-  setStatus('Forkastet – tag sedlen igen eller næste');
+  setStatus('Forkastet – prøv igen');
 });
 function closeReview() {
   document.getElementById('review').classList.remove('open');
@@ -630,7 +701,7 @@ function renderSettings() {
     html += '<input type="text" data-name="' + b.id + '" value="' + itemName(b.id).replace(/"/g, '&quot;') + '" style="margin-bottom:6px">';
   });
   html += '</div>';
-  html += '<div class="setrow"><div class="small">Kaiser Brunch-scanner <b>v2.1</b> (juli 2026) · Data gemmes kun på denne telefon.</div></div>';
+  html += '<div class="setrow"><div class="small">Kaiser Brunch-scanner <b>v3.0</b> (juli 2026) · Data gemmes kun på denne telefon.</div></div>';
   v.innerHTML = html;
 
   document.getElementById('setLoc').addEventListener('change', function (e) {
