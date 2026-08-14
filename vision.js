@@ -21,29 +21,73 @@
 
   // Krydsfelter (x, y = øverste venstre hjørne, s = sidelængde) – kortrevision Q3
   // OBS: koordinater kalibreres mod den aktuelle trykfil/rigtige fotos.
-  // Opmålt på rigtige fotos af den aktuelle kortrevision (juli 2026)
+  // Opmålt direkte i den danske TRYKFIL (kanonisk 708×2000) – august 2026.
+  // (Tidligere foto-udledte tal lå ~17 px forskudt og gav fejlaflæsninger.)
   var BOXES = [
-    { id: 'roraeg',        x: 71, y: 444,  s: 25, cat: 'MEJERI',      name: 'Røræg' },
-    { id: 'spejlaeg',      x: 70, y: 488,  s: 25, cat: 'MEJERI',      name: 'Spejlæg' },
-    { id: 'havarti',       x: 68, y: 532,  s: 25, cat: 'MEJERI',      name: 'Modnet Havarti ost' },
-    { id: 'yoghurt',       x: 67, y: 577,  s: 25, cat: 'MEJERI',      name: 'Hjemmelavet blåbæryoghurt' },
-    { id: 'chiagrod',      x: 65, y: 645,  s: 25, cat: 'MEJERI',      name: 'Hjemmelavet chiagrød' },
-    { id: 'avocado',       x: 62, y: 763,  s: 25, cat: 'PLANTERIGET', name: 'Avocado og hytteost' },
-    { id: 'frugtskal',     x: 61, y: 808,  s: 25, cat: 'PLANTERIGET', name: 'Eksotisk frugtskål' },
-    { id: 'sommerfersken', x: 60, y: 865,  s: 25, cat: 'PLANTERIGET', name: 'Sommerfersken med stracciatella' },
-    { id: 'rosti',         x: 58, y: 991,  s: 25, cat: 'KØD & FISK',  name: 'Rösti' },
-    { id: 'honsesalat',    x: 57, y: 1037, s: 25, cat: 'KØD & FISK',  name: 'Hjemmelavet hønsesalat' },
-    { id: 'crispychicken', x: 55, y: 1081, s: 25, cat: 'KØD & FISK',  name: 'Crispy chicken' },
-    { id: 'brunchpolser',  x: 54, y: 1127, s: 25, cat: 'KØD & FISK',  name: '2 brunchpølser' },
-    { id: 'laks',          x: 53, y: 1172, s: 25, cat: 'KØD & FISK',  name: 'Koldrøget laks' },
-    { id: 'painauchoc',    x: 60, y: 1282, s: 25, cat: 'BAGERIET',    name: 'Pain au chocolat fra Meyers' },
-    { id: 'croissant',     x: 59, y: 1328, s: 25, cat: 'BAGERIET',    name: 'Øko. smørcroissant fra Meyers' },
-    { id: 'toast',         x: 58, y: 1374, s: 25, cat: 'BAGERIET',    name: 'Mariagertoba-toast' },
-    { id: 'jordbaerkage',  x: 53, y: 1510, s: 25, cat: 'FINALEN',     name: 'Kaisers jordbærkage' },
-    { id: 'koldskal',      x: 50, y: 1583, s: 25, cat: 'FINALEN',     name: 'Hjemmelavet koldskål' },
-    { id: 'pandekager',    x: 48, y: 1656, s: 25, cat: 'FINALEN',     name: '2 amerikanske pandekager' },
-    { id: 'pisketsmor',    x: 9,   y: 1878, s: 19, cat: 'EKSTRA',     name: 'Pisket smør', extra: true },
-    { id: 'nutella',       x: 138, y: 1871, s: 19, cat: 'EKSTRA',     name: 'Nutella (10,-)', extra: true }
+    { id: 'roraeg',        x: 62, y: 427,  s: 25, cat: 'MEJERI',      name: 'Røræg' },
+    { id: 'spejlaeg',      x: 62, y: 472,  s: 25, cat: 'MEJERI',      name: 'Spejlæg' },
+    { id: 'havarti',       x: 62, y: 517,  s: 25, cat: 'MEJERI',      name: 'Modnet Havarti ost' },
+    { id: 'yoghurt',       x: 62, y: 563,  s: 25, cat: 'MEJERI',      name: 'Hjemmelavet blåbæryoghurt' },
+    { id: 'chiagrod',      x: 62, y: 631,  s: 25, cat: 'MEJERI',      name: 'Hjemmelavet chiagrød' },
+    { id: 'avocado',       x: 62, y: 751,  s: 25, cat: 'PLANTERIGET', name: 'Avocado og hytteost' },
+    { id: 'frugtskal',     x: 62, y: 796,  s: 25, cat: 'PLANTERIGET', name: 'Eksotisk frugtskål' },
+    { id: 'sommerfersken', x: 62, y: 853,  s: 25, cat: 'PLANTERIGET', name: 'Sommerfersken med stracciatella' },
+    { id: 'rosti',         x: 63, y: 980,  s: 25, cat: 'KØD & FISK',  name: 'Rösti' },
+    { id: 'honsesalat',    x: 63, y: 1025, s: 25, cat: 'KØD & FISK',  name: 'Hjemmelavet hønsesalat' },
+    { id: 'crispychicken', x: 63, y: 1070, s: 25, cat: 'KØD & FISK',  name: 'Crispy chicken' },
+    { id: 'brunchpolser',  x: 63, y: 1115, s: 25, cat: 'KØD & FISK',  name: '2 brunchpølser' },
+    { id: 'laks',          x: 63, y: 1160, s: 25, cat: 'KØD & FISK',  name: 'Koldrøget laks' },
+    { id: 'painauchoc',    x: 75, y: 1289, s: 25, cat: 'BAGERIET',    name: 'Pain au chocolat fra Meyers' },
+    { id: 'croissant',     x: 75, y: 1334, s: 25, cat: 'BAGERIET',    name: 'Øko. smørcroissant fra Meyers' },
+    { id: 'toast',         x: 75, y: 1379, s: 25, cat: 'BAGERIET',    name: 'Mariagertoba-toast' },
+    { id: 'jordbaerkage',  x: 75, y: 1507, s: 25, cat: 'FINALEN',     name: 'Kaisers jordbærkage' },
+    { id: 'koldskal',      x: 75, y: 1578, s: 25, cat: 'FINALEN',     name: 'Hjemmelavet koldskål' },
+    { id: 'pandekager',    x: 75, y: 1649, s: 25, cat: 'FINALEN',     name: '2 amerikanske pandekager' },
+    { id: 'pisketsmor',    x: 44,  y: 1845, s: 18, cat: 'EKSTRA',     name: 'Pisket smør', extra: true },
+    { id: 'nutella',       x: 170, y: 1847, s: 18, cat: 'EKSTRA',     name: 'Nutella (10,-)', extra: true }
+  ];
+
+  /* ---- ENGELSK KORT ("BUILD YOUR OWN BRUNCH") ----
+     Samme retter i samme rækkefølge, men engelsk tekst ombrydes anderledes,
+     så felterne sidder på andre højder. Kortet har INGEN QR-kode.
+     Opmålt på ENG-trykfilen august 2026. */
+  var BOXES_EN = [
+    { id: 'roraeg',        x: 62, y: 427,  s: 25 },
+    { id: 'spejlaeg',      x: 62, y: 472,  s: 25 },
+    { id: 'havarti',       x: 62, y: 517,  s: 25 },
+    { id: 'yoghurt',       x: 63, y: 563,  s: 25 },
+    { id: 'chiagrod',      x: 62, y: 631,  s: 25 },
+    { id: 'avocado',       x: 62, y: 764,  s: 25 },
+    { id: 'frugtskal',     x: 62, y: 830,  s: 25 },
+    { id: 'sommerfersken', x: 62, y: 873,  s: 25 },
+    { id: 'rosti',         x: 63, y: 988,  s: 25 },
+    { id: 'honsesalat',    x: 63, y: 1033, s: 25 },
+    { id: 'crispychicken', x: 63, y: 1078, s: 25 },
+    { id: 'brunchpolser',  x: 63, y: 1123, s: 25 },
+    { id: 'laks',          x: 63, y: 1187, s: 25 },
+    { id: 'painauchoc',    x: 75, y: 1323, s: 25 },
+    { id: 'croissant',     x: 75, y: 1368, s: 25 },
+    { id: 'toast',         x: 75, y: 1413, s: 25 },
+    { id: 'jordbaerkage',  x: 75, y: 1533, s: 25 },
+    { id: 'koldskal',      x: 75, y: 1604, s: 25 },
+    { id: 'pandekager',    x: 75, y: 1675, s: 25 },
+    { id: 'pisketsmor',    x: 240, y: 1859, s: 18, extra: true },
+    { id: 'nutella',       x: 365, y: 1861, s: 18, extra: true }
+  ];
+
+  // Byg fuld ENG-liste med navne/kategorier fra den danske (samme retter)
+  var BOXES_EN_FULL = BOXES_EN.map(function (b) {
+    var dk = null;
+    for (var i = 0; i < BOXES.length; i++) if (BOXES[i].id === b.id) dk = BOXES[i];
+    return {
+      id: b.id, x: b.x, y: b.y, s: b.s, extra: !!b.extra,
+      cat: dk ? dk.cat : '', name: dk ? dk.name : b.id
+    };
+  });
+
+  var LAYOUTS = [
+    { key: 'dk', boxes: BOXES, hasQR: true },
+    { key: 'en', boxes: BOXES_EN_FULL, hasQR: false }
   ];
 
   // QR-symbolets placering på kortet (kanoniske koordinater, opmålt juli 2026)
@@ -1177,21 +1221,35 @@
     return out;
   }
 
+  /* Prøver begge kort-layouts (dansk/engelsk) og vælger det, hvor flest
+     felt-rammer findes. Returnerer det bedste resultat. */
   function analyzeCanonical(canon, sensitivity, wide) {
+    var best = null;
+    for (var li = 0; li < LAYOUTS.length; li++) {
+      var r = analyzeWithLayout(canon, sensitivity, LAYOUTS[li]);
+      if (!best || r.bordersFound > best.bordersFound) best = r;
+    }
+    return best;
+  }
+
+  function analyzeWithLayout(canon, sensitivity, layout) {
+    var BOXES = layout.boxes;          // skygger den globale bevidst
     sensitivity = sensitivity || 1;
     var T = 0.09 / sensitivity;
 
     var D = buildDarkMap(canon);
-    var qr = findQRBlock(D);
+    var qr = layout.hasQR ? findQRBlock(D) : { score: 99, dx: 0, dy: 0 };
 
     // DTW-registrering af hele rækkeprofilen: alle tekstlinjer, mellemrum og
     // QR justeres samlet – tåler skæve/forvredne warps uden identitets-fejl
     var obs = rowProfile(D);
-    var ali = dtwAlign(REF_PROFILE, obs.A, REF_PROFILE_B, obs.B);
-    if (!ali) {
-      return { items: [], bordersFound: 0, valid: false, reg: { qrScore: qr.score, dtw: null } };
+    var ali = layout.hasQR ? dtwAlign(REF_PROFILE, obs.A, REF_PROFILE_B, obs.B) : null;
+    if (layout.hasQR && !ali) {
+      return { items: [], bordersFound: 0, valid: false, layout: layout.key, reg: { qrScore: qr.score, dtw: null } };
     }
+    if (!ali) ali = { map: null, cost: 0 };   // engelsk: ingen profil-reference endnu
     function mapY(y) {
+      if (!ali.map) return y;      // uden profil: identitet (warp er allerede kanonisk)
       var i = Math.max(0, Math.min(REF_PROFILE.length - 1, Math.round(y / 2)));
       return ali.map[i] * 2;
     }
@@ -1289,7 +1347,7 @@
       var checked = r.fracIn > T || r.fracHalo > T * 1.3 || (r.fracIn + r.fracHalo) > T * 1.8;
       // ekstra-felterne ligger tæt på håndskrift (navn/bord) – kræv fundet
       // ramme eller meget tydeligt blæk for at undgå falske positive
-      if (b2.extra && checked && !(r.borderFound || r.fracIn > 2 * T)) checked = false;
+      if (b2.extra && checked && !(r.borderFound && r.fracIn > 1.6 * T)) checked = false;
       // usikkerheds-flag: tæt på tærsklen eller ramme ikke fundet
       var maxFrac = Math.max(r.fracIn, r.fracHalo);
       var uncertain = !r.borderFound || (maxFrac > T * 0.45 && maxFrac < T * 2.2);
@@ -1309,9 +1367,10 @@
     return {
       items: results,
       bordersFound: bordersFound,
+      layout: layout.key,
       valid: qr.score >= 8 && bordersFound >= 11 && anchors.length >= 6 && ali.cost < 20,
       confident: bordersFound >= 18 && ali.cost < 16.5 && uncertainCount <= 2,
-      reg: { qrScore: Math.round(qr.score * 10) / 10, qrDx: qr.dx, dtw: Math.round(ali.cost * 100) / 100, anchors: anchors.length }
+      reg: { layout: layout.key, qrScore: Math.round(qr.score * 10) / 10, dtw: Math.round(ali.cost * 100) / 100, anchors: anchors.length }
     };
   }
 
