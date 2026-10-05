@@ -1,5 +1,5 @@
 /* ============================================================
-   Café Kaisers – Brunch-scanner: computer vision-modul  v2
+   Café Kaisers – Brunch-scanner: computer vision-modul  v3
    Ren JavaScript. Bruges af både appen (index.html) og
    Node-testen. Kanonisk kort-rum: 708 x 2000 px.
 
@@ -21,30 +21,30 @@
 
   // Krydsfelter (x, y = øverste venstre hjørne, s = sidelængde) – kortrevision Q3
   // OBS: koordinater kalibreres mod den aktuelle trykfil/rigtige fotos.
-  // Opmålt direkte i den danske TRYKFIL (kanonisk 708×2000) – august 2026.
+  // MENU Q4 2026 – opmålt direkte i den danske TRYKFIL (kanonisk 708×2000), oktober 2026.
   // (Tidligere foto-udledte tal lå ~17 px forskudt og gav fejlaflæsninger.)
   var BOXES = [
-    { id: 'roraeg',        x: 62, y: 427,  s: 25, cat: 'MEJERI',      name: 'Røræg' },
-    { id: 'spejlaeg',      x: 62, y: 472,  s: 25, cat: 'MEJERI',      name: 'Spejlæg' },
-    { id: 'havarti',       x: 62, y: 517,  s: 25, cat: 'MEJERI',      name: 'Modnet Havarti ost' },
-    { id: 'yoghurt',       x: 62, y: 563,  s: 25, cat: 'MEJERI',      name: 'Hjemmelavet blåbæryoghurt' },
-    { id: 'chiagrod',      x: 62, y: 631,  s: 25, cat: 'MEJERI',      name: 'Hjemmelavet chiagrød' },
-    { id: 'avocado',       x: 62, y: 751,  s: 25, cat: 'PLANTERIGET', name: 'Avocado og hytteost' },
-    { id: 'frugtskal',     x: 62, y: 796,  s: 25, cat: 'PLANTERIGET', name: 'Eksotisk frugtskål' },
-    { id: 'sommerfersken', x: 62, y: 853,  s: 25, cat: 'PLANTERIGET', name: 'Sommerfersken med stracciatella' },
-    { id: 'rosti',         x: 63, y: 980,  s: 25, cat: 'KØD & FISK',  name: 'Rösti' },
-    { id: 'honsesalat',    x: 63, y: 1025, s: 25, cat: 'KØD & FISK',  name: 'Hjemmelavet hønsesalat' },
-    { id: 'crispychicken', x: 63, y: 1070, s: 25, cat: 'KØD & FISK',  name: 'Crispy chicken' },
-    { id: 'brunchpolser',  x: 63, y: 1115, s: 25, cat: 'KØD & FISK',  name: '2 brunchpølser' },
-    { id: 'laks',          x: 63, y: 1160, s: 25, cat: 'KØD & FISK',  name: 'Koldrøget laks' },
-    { id: 'painauchoc',    x: 75, y: 1289, s: 25, cat: 'BAGERIET',    name: 'Pain au chocolat fra Meyers' },
-    { id: 'croissant',     x: 75, y: 1334, s: 25, cat: 'BAGERIET',    name: 'Øko. smørcroissant fra Meyers' },
-    { id: 'toast',         x: 75, y: 1379, s: 25, cat: 'BAGERIET',    name: 'Mariagertoba-toast' },
-    { id: 'jordbaerkage',  x: 75, y: 1507, s: 25, cat: 'FINALEN',     name: 'Kaisers jordbærkage' },
-    { id: 'koldskal',      x: 75, y: 1578, s: 25, cat: 'FINALEN',     name: 'Hjemmelavet koldskål' },
-    { id: 'pandekager',    x: 75, y: 1649, s: 25, cat: 'FINALEN',     name: '2 amerikanske pandekager' },
-    { id: 'pisketsmor',    x: 44,  y: 1845, s: 18, cat: 'EKSTRA',     name: 'Pisket smør', extra: true },
-    { id: 'nutella',       x: 170, y: 1847, s: 18, cat: 'EKSTRA',     name: 'Nutella (10,-)', extra: true }
+    { id: 'roraeg',          x: 62, y: 427,  s: 25, cat: 'MEJERI',      name: 'Røræg' },
+    { id: 'spejlaeg',        x: 62, y: 472,  s: 25, cat: 'MEJERI',      name: 'Spejlæg' },
+    { id: 'gammelknas',      x: 63, y: 518,  s: 25, cat: 'MEJERI',      name: 'Gammelknas' },
+    { id: 'yoghurt',         x: 63, y: 563,  s: 25, cat: 'MEJERI',      name: 'Hjemmelavet blåbæryoghurt' },
+    { id: 'chiagrod',        x: 63, y: 632,  s: 25, cat: 'MEJERI',      name: 'Hjemmelavet chiagrød' },
+    { id: 'avocado',         x: 62, y: 751,  s: 25, cat: 'PLANTERIGET', name: 'Avocado og hytteost' },
+    { id: 'frugtskal',       x: 63, y: 797,  s: 25, cat: 'PLANTERIGET', name: 'Eksotisk frugtskål' },
+    { id: 'kartoffeltaerte', x: 63, y: 854,  s: 25, cat: 'PLANTERIGET', name: 'Kartoffeltærte' },
+    { id: 'rosti',           x: 63, y: 980,  s: 25, cat: 'KØD & FISK',  name: 'Rösti' },
+    { id: 'honsesalat',      x: 63, y: 1025, s: 25, cat: 'KØD & FISK',  name: 'Hjemmelavet hønsesalat' },
+    { id: 'crispychicken',   x: 63, y: 1070, s: 25, cat: 'KØD & FISK',  name: 'Crispy chicken' },
+    { id: 'brunchpolser',    x: 64, y: 1116, s: 25, cat: 'KØD & FISK',  name: '2 brunchpølser' },
+    { id: 'laks',            x: 64, y: 1161, s: 25, cat: 'KØD & FISK',  name: 'Koldrøget laks' },
+    { id: 'wienersnegl',     x: 75, y: 1311, s: 25, cat: 'BAGERIET',    name: 'Øko. wienersnegl fra Meyers' },
+    { id: 'croissant',       x: 75, y: 1356, s: 25, cat: 'BAGERIET',    name: 'Øko. smørcroissant fra Meyers' },
+    { id: 'toast',           x: 75, y: 1401, s: 25, cat: 'BAGERIET',    name: 'Mariagertoba-toast' },
+    { id: 'aeblekage',       x: 75, y: 1539, s: 25, cat: 'FINALEN',     name: 'Kaisers æblekage' },
+    { id: 'kokoschokolade',  x: 75, y: 1611, s: 25, cat: 'FINALEN',     name: 'Kaisers kokos og chokolade' },
+    { id: 'pandekager',      x: 75, y: 1652, s: 25, cat: 'FINALEN',     name: '2 amerikanske pandekager' },
+    { id: 'pisketsmor',      x: 45,  y: 1846, s: 18, cat: 'EKSTRA',     name: 'Pisket smør', extra: true },
+    { id: 'nutella',         x: 170, y: 1847, s: 18, cat: 'EKSTRA',     name: 'Nutella (10,-)', extra: true }
   ];
 
   /* ---- ENGELSK KORT ("BUILD YOUR OWN BRUNCH") ----
@@ -85,22 +85,46 @@
     };
   });
 
+  // Rækkeprofil for det ENGELSKE kort (opmålt i ENG-trykfilen august 2026)
+  var ROW_PROFILE_EN = '00000000000000000000000000004;@=<=><>>9000000009N_XOOPRQONPXUD10000000000002:FT\\ZXYK8004<DIEG>60000000000000004:EHKGH?600000000007BVaaaaWD52000000000035HRXSVH;20000000134EVX54222222222100003=CA>>@A@CB:000000000000146DMPMPG;31110000000011113:CIFGB<3210000000011025AS_Z\\SE53000000000124=IQOPKB7521000005;@=>;70000000035=IQOPK@420110011?EGDH@710000000000000000003;@>==?>=@?90000000000135>KTRSL?211110023DLPLOD810000001124:?BAA?81111000000123247FORNPE811000000000000000000008@B>?@@??D>500000000000125>KUPSMD42111000000001124BUa[]VE11100000000111136ENPLND921000000001136GRVSWK<2210000129=?=>930000011026BS_Z\\SD2100000015<A>?<8000000000000000017:98898799500000000000026?KSQQK?211210000000011138KX\\XZN>6420000000011026GRWTWL>63000000158989630000000000007=>:;<<:;?;4000000026CS^Z\\SE3201110019CLHJD<000000000017=LTVTUH810011113<GQLOI@00000000000011135AR^Y]UH5300000000000000000006CMLIIIIJKLKKKKJJLPE7000000006<?>????@@@@@@?>>?=71000000000125:>?;6221000000000000000345442JYP000000000149AEC@9AI@0000000000000000';
+
+  function decodeProfile(str) {
+    var out = new Float32Array(str.length);
+    for (var i = 0; i < str.length; i++) out[i] = (str.charCodeAt(i) - 48) * 2;
+    return out;
+  }
+
+  function boxChannel(boxes, n) {
+    var b = new Float32Array(n);
+    for (var i = 0; i < boxes.length; i++) {
+      var y0 = Math.round(boxes[i].y / 2), y1 = Math.round((boxes[i].y + boxes[i].s) / 2);
+      for (var y = y0; y <= y1 && y < n; y++) b[y] = 20;
+    }
+    var out = new Float32Array(n);
+    for (var i2 = 0; i2 < n; i2++) {
+      var s = 0, c = 0;
+      for (var j = -2; j <= 2; j++) { var k = i2 + j; if (k >= 0 && k < n) { s += b[k]; c++; } }
+      out[i2] = s / c;
+    }
+    return out;
+  }
+
   var LAYOUTS = [
-    { key: 'dk', boxes: BOXES, hasQR: true },
-    { key: 'en', boxes: BOXES_EN_FULL, hasQR: false }
+    { key: 'dk', boxes: BOXES, hasQR: true }
+    // { key: 'en', boxes: BOXES_EN_FULL, hasQR: false }  // Q3-engelsk – afventer Q4-trykfil
   ];
 
   // QR-symbolets placering på kortet (kanoniske koordinater, opmålt juli 2026)
-  var QR_BOX = { x0: 345, y0: 1733, x1: 481, y1: 1873 };
+  var QR_BOX = { x0: 374, y0: 1731, x1: 510, y1: 1866 };
 
   // jsQR's egne hjørne-koordinater målt på det oprettede referencekort.
   // VIGTIGT: brug disse (ikke QR_BOX) som destination ved QR-forankring,
   // så jsQR's hjørne-konvention går ud mod sig selv.
   var QR_DST = [
-    [348.51, 1737.62],   // topLeftCorner
-    [482.33, 1731.16],   // topRightCorner
-    [480.32, 1870.58],   // bottomRightCorner
-    [343.91, 1878.15]    // bottomLeftCorner
+    [373.6, 1730.7],   // topLeftCorner
+    [509.6, 1730.7],   // topRightCorner
+    [510.3, 1866.7],   // bottomRightCorner
+    [373.5, 1866.4]    // bottomLeftCorner
   ];
 
   /* ================= hjælpere ================= */
@@ -1063,7 +1087,7 @@
   /* ---- DTW-registrering af rækkeprofilen ----
      Referenceprofil: mørke-andel pr. række (trin 2 px, udglattet, skaleret),
      målt på det oprettede referencekort. 1000 tegn, alfabet chr(48+v/2). */
-  var ROW_PROFILE_REF = '97AADCA9?LRX_aa`@00000000000000000000000003;?<;==<@=600000003BMKDCEHIFDGMI;0000000000001:N[]]_^VD400015=EKHF<200000000014<HVYXRJ=30000000000004>IXaaa]Q@310000015@NTPPJ@310000012459SYJ32222222210000000588788768851100000001345:BHEFD>522110000000111128AGCEB>541000000012325=KZa[WNA5200000000358<JTWSRG;321000014<A?>=9310000002225=HV]\\YSE72000000000000000000000004=A>;<=<<??810000011237<DOXYVRG:21221000000012336=BDBC?822200000000000124:AISYWQI>511221000000000000000000000016;<::;::;<820000000000124;CJLKHD>720021100000137=BGOUWRJ@721210000000036:?DKMID?:522100112369?EJNMID>7210220001247<BEHJMNNJF@:522100000000000049;98899:<;5100000012334459=CGJHFB<620001222345668<ADGJKIC?:5211110123457;@DGILLJD?;632210001479;;863100000000000001479989999:951023458<?ACEFGJJGC?:5210013689<>?=:863001234458<?ABDGHKJGA=8532221001379:986554469<?BEFFHIHHD?;84200111000000000013543322111127;>??@CHMPRQNNOPMJJJKNQRPLJIIGFFEA@BHMNNRY]ZWTROPRUVUTTSQMG@>>???==;<>?>;:97642100000000000111237::;<===<==????<96765348:;<>?@?=975335';
+  var ROW_PROFILE_REF = '00000000000000000000000000003;@=<==<>>9000000006FRLCCDHIGEELK>10000000000000@Xa```aXD0000026AFGI?60000000000018CR]VTKA000000000000003<M\aaa`O;310000013>LXQRKA210000000134EVX5422212222210000016887887788511100000000134>DEDF@9411100000000111139AFCEC>53100000000121037NZaZ]M<2100000000135@NXUUOD7421000015<A>?;711000000221148M[`[_QA61000000000000000000000003=C?<<>=<?@90000000000258LY]Y\O?52110000000011225<BECEB:31100000000000000148HQVQSH;32211000069:9:62000000000000006;=9:;;:;=9300000000000126@NZUWOE43111000000001114AS`Y\TF43100000000111136EORNOE:31000000002236GRUQTI;32100000000011026BR\VXPD4300000018<=;=940000000000000000000000029=;99;:9<<7000000000000259FOSPPE931110000000011237BOWTUN@3110000000011014@OZVYQF7410000016>C?@=810000000000000000000059:889999<930000000047IU\X[M>4101100003454531000000000001126?KTRTNB42100000011249LY^[]O=521000000000000024543221115@OURNMNOOPQQPOPRUQD<<A?><::<HV\]^\ZXTSRRRSVZ__YJ>@>:;>BA@ACDCFJLGA=>?9300000000000000000001356554DWV500000000015=@AA;EI@0000000000000000';
   var REF_PROFILE = (function () {
     var out = new Float32Array(ROW_PROFILE_REF.length);
     for (var i = 0; i < ROW_PROFILE_REF.length; i++) out[i] = (ROW_PROFILE_REF.charCodeAt(i) - 48) * 2;
@@ -1157,6 +1181,9 @@
     return { map: map, cost: bc / N };
   }
 
+  var EN_PROFILE = decodeProfile(ROW_PROFILE_EN);
+  var EN_PROFILE_B = boxChannel(BOXES_EN_FULL, EN_PROFILE.length);
+
   // Sektionsoverskrifternes positioner på referencekortet (centrum af båndet)
   var HEADER_REF = [410, 730, 951, 1236, 1468];
 
@@ -1224,10 +1251,14 @@
   /* Prøver begge kort-layouts (dansk/engelsk) og vælger det, hvor flest
      felt-rammer findes. Returnerer det bedste resultat. */
   function analyzeCanonical(canon, sensitivity, wide) {
-    var best = null;
+    // Vælg sprog efter hvor godt tekstprofilen matcher (DTW-pris) – langt
+    // mere sikkert end antal fundne rammer, som er ens for begge layouts
+    var best = null, bestScore = -Infinity;
     for (var li = 0; li < LAYOUTS.length; li++) {
       var r = analyzeWithLayout(canon, sensitivity, LAYOUTS[li]);
-      if (!best || r.bordersFound > best.bordersFound) best = r;
+      var dtw = (r.reg && typeof r.reg.dtw === 'number') ? r.reg.dtw : 99;
+      var score = r.bordersFound - dtw * 1.5;
+      if (!best || score > bestScore) { bestScore = score; best = r; }
     }
     return best;
   }
@@ -1243,11 +1274,12 @@
     // DTW-registrering af hele rækkeprofilen: alle tekstlinjer, mellemrum og
     // QR justeres samlet – tåler skæve/forvredne warps uden identitets-fejl
     var obs = rowProfile(D);
-    var ali = layout.hasQR ? dtwAlign(REF_PROFILE, obs.A, REF_PROFILE_B, obs.B) : null;
-    if (layout.hasQR && !ali) {
+    var refA = layout.key === 'en' ? EN_PROFILE : REF_PROFILE;
+    var refB = layout.key === 'en' ? EN_PROFILE_B : REF_PROFILE_B;
+    var ali = dtwAlign(refA, obs.A, refB, obs.B);
+    if (!ali) {
       return { items: [], bordersFound: 0, valid: false, layout: layout.key, reg: { qrScore: qr.score, dtw: null } };
     }
-    if (!ali) ali = { map: null, cost: 0 };   // engelsk: ingen profil-reference endnu
     function mapY(y) {
       if (!ali.map) return y;      // uden profil: identitet (warp er allerede kanonisk)
       var i = Math.max(0, Math.min(REF_PROFILE.length - 1, Math.round(y / 2)));
@@ -1420,6 +1452,14 @@
     function attempt(canon, via) {
       if (!canon) return null;
       var res = analyzeCanonical(canon, sensitivity);
+      // Forretningsregel: en byg-selv-brunch har 5-7 retter. Læses langt
+      // flere som krydset, er aflæsningen gal (skygge/forskydning) – afvis.
+      if (res.valid) {
+        var nMenu = 0;
+        for (var ci = 0; ci < res.items.length; ci++) if (res.items[ci].checked && !res.items[ci].extra) nMenu++;
+        if (nMenu > 9) res.valid = false;
+        else if (nMenu > 7 || nMenu < 4) res.confident = false;
+      }
       if (res.valid) {
         validResults.push({ ok: true, items: res.items, bordersFound: res.bordersFound, confident: res.confident, canon: canon, via: via, reg: res.reg });
         return validResults[validResults.length - 1];
@@ -1477,6 +1517,31 @@
       attempt(canon, 'quad');
       var picked2 = pickBest();
       if (picked2) return picked2;
+    }
+
+    /* 3) GUIDE-RAMME-fallback: tjeneren har lagt sedlen ind i rammen på
+       skærmen, så vi antager at den fylder et centreret område med kortets
+       sideforhold. Profil-justeringen (DTW) retter den lodrette placering,
+       og felt-sporingen den vandrette – det er nok til en sikker aflæsning
+       på kort UDEN QR (engelsk) og på lyse borde. */
+    var frames = [0.92, 0.84, 1.0];
+    for (var fi = 0; fi < frames.length; fi++) {
+      var frac = frames[fi];
+      var fh = h * frac, fw = fh * (CARD_W / CARD_H);
+      if (fw > w * 0.98) { fw = w * 0.98; fh = fw * (CARD_H / CARD_W); }
+      var cx = w / 2, cy = h / 2;
+      var quadF = [
+        [cx - fw / 2, cy - fh / 2], [cx + fw / 2, cy - fh / 2],
+        [cx + fw / 2, cy + fh / 2], [cx - fw / 2, cy + fh / 2]
+      ];
+      var canonF = warpToCanonical(gray, w, h, quadF);
+      if (!canonF) continue;
+      if (isUpsideDown(canonF)) {
+        canonF = warpToCanonical(gray, w, h, [quadF[2], quadF[3], quadF[0], quadF[1]]);
+      }
+      attempt(canonF, 'ramme');
+      var pickedF = pickBest();
+      if (pickedF) return pickedF;
     }
 
     if (bestRes) {
